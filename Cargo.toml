@@ -1,0 +1,24 @@
+[workspace]
+
+members = [
+    "store",
+    "collection",
+    "collection-postgres"
+]
+
+[workspace.dependencies]
+rand = "0.8"
+dotenv = "0.15"
+sentry = "0.31"
+anyhow = "1.0"
+chrono = "0.4"
+tracing = "0.1"
+actix-web = "4.3"
+thiserror = "1.0"
+serde_json = "1.0"
+async-trait = "0.1"
+tracing-subscriber = "0.3"
+collection = { path = "collection" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+sqlx = { version = "0.6", features = ["postgres", "runtime-tokio-native-tls", "chrono", "json"] }

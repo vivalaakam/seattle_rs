@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: seattle_store_db
+    image: postgres:alpine
+    restart: always
+    command: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=seattle_store
+      - POSTGRES_USER=seattle_store_user
+      - POSTGRES_PASSWORD=seattle_store_password
