@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::Collections;
+use collection::{Collections, serialize_value};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -15,6 +15,7 @@ mod helpers;
 struct CollectionResponse {
     id: String,
     name: String,
+    age: i32,
 }
 
 #[tokio::test]
@@ -43,13 +44,16 @@ async fn collection_where() {
         let result = collections
             .insert(
                 table_name.to_string(),
-                json!({ "name": format!("test_{}", i) }),
+                json!({ "name": format!("test_{}", i), "age": 10 + i }),
             )
             .await;
 
         assert_eq!(result.is_ok(), true);
 
-        let row = serde_json::from_value::<CollectionResponse>(result.unwrap()).unwrap();
+        let result = serialize_value(result.unwrap());
+
+        let row = serde_json::from_str::<CollectionResponse>(&result).unwrap();
+
         rows.push(row);
     }
 
@@ -74,12 +78,8 @@ async fn collection_where() {
 
     let rows_eq = result_eq
         .into_iter()
-        .map(|row| {
-            serde_json::from_value::<CollectionResponse>(row)
-                .unwrap()
-                .id
-        })
-        .collect::<Vec<_>>();
+        .map(|row| row.get("id").unwrap().as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
 
     assert_eq!(rows_eq.get(0).unwrap(), &test_row_0.id);
 
@@ -101,12 +101,8 @@ async fn collection_where() {
 
     let rows_ne = result_ne
         .into_iter()
-        .map(|row| {
-            serde_json::from_value::<CollectionResponse>(row)
-                .unwrap()
-                .id
-        })
-        .collect::<Vec<_>>();
+        .map(|row| row.get("id").unwrap().as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
 
     assert_eq!(rows_ne.contains(&test_row_0.id), false);
 
@@ -131,12 +127,8 @@ async fn collection_where() {
 
     let rows_in = result_in
         .into_iter()
-        .map(|row| {
-            serde_json::from_value::<CollectionResponse>(row)
-                .unwrap()
-                .id
-        })
-        .collect::<Vec<_>>();
+        .map(|row| row.get("id").unwrap().as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
 
     assert_eq!(rows_in.contains(&test_row_0.id), true);
     assert_eq!(rows_in.contains(&test_row_1.id), true);
@@ -162,12 +154,8 @@ async fn collection_where() {
 
     let rows_nin = result_nin
         .into_iter()
-        .map(|row| {
-            serde_json::from_value::<CollectionResponse>(row)
-                .unwrap()
-                .id
-        })
-        .collect::<Vec<_>>();
+        .map(|row| row.get("id").unwrap().as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
 
     assert_eq!(rows_nin.contains(&test_row_0.id), false);
     assert_eq!(rows_nin.contains(&test_row_1.id), false);

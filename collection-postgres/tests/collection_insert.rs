@@ -6,7 +6,7 @@ use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::Collections;
+use collection::{Collections, serialize_value};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -16,6 +16,7 @@ mod helpers;
 pub struct CollectionResponse {
     id: String,
     name: String,
+    age: i32,
 }
 
 #[tokio::test]
@@ -43,19 +44,21 @@ async fn collection_insert() {
             table_name.to_string(),
             json!({
                 "name": "test",
+                "age": 10,
             }),
         )
         .await;
 
     assert_eq!(created.is_ok(), true);
 
-    let created = created.unwrap();
+    let created = serialize_value(created.unwrap());
 
-    info!("created: {:?}", json!(created).to_string());
+    info!("created: {created}");
 
-    let row = serde_json::from_value::<CollectionResponse>(created).unwrap();
+    let row = serde_json::from_str::<CollectionResponse>(&created).unwrap();
 
     assert_eq!(row.name, "test");
+    assert_eq!(row.age, 10);
 
     // check
 
@@ -65,7 +68,9 @@ async fn collection_insert() {
 
     assert_eq!(check.is_ok(), true);
 
-    let check_row = serde_json::from_value::<CollectionResponse>(check.unwrap()).unwrap();
+    let check = serialize_value(check.unwrap());
+
+    let check_row = serde_json::from_str::<CollectionResponse>(&check).unwrap();
 
     assert_eq!(check_row, row);
 }
