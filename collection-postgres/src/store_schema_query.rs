@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-use sqlx::{FromRow, types::Json};
+use sqlx::{types::Json, FromRow};
 
-use collection::StorageCollection;
+use collection::Collection;
 
 #[derive(FromRow)]
 pub struct StoreCollectionQuery {
@@ -12,13 +12,13 @@ pub struct StoreCollectionQuery {
     updated_at: DateTime<Utc>,
 }
 
-impl Into<StorageCollection> for StoreCollectionQuery {
-    fn into(self) -> StorageCollection {
-        StorageCollection {
-            name: self.name,
-            fields: serde_json::from_value(self.fields.0).unwrap(),
-            created_at: self.created_at,
-            updated_at: self.updated_at,
+impl From<StoreCollectionQuery> for Collection {
+    fn from(val: StoreCollectionQuery) -> Self {
+        Collection {
+            name: val.name,
+            fields: serde_json::from_value(val.fields.0).unwrap(),
+            created_at: val.created_at,
+            updated_at: val.updated_at,
         }
     }
 }

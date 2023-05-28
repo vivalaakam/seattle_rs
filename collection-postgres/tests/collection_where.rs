@@ -1,14 +1,11 @@
-use std::collections::HashMap;
 use std::env;
 
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{
-    FieldType, StorageCollection, StorageCollectionField, StorageCollectionTrait, WhereAttr,
-};
+use collection::Collections;
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -38,24 +35,13 @@ async fn collection_where() {
 
     cleanup_table(instance.get_pool(), &table_name).await;
 
-    let schema = instance
-        .create_collection(StorageCollection {
-            name: table_name.to_string(),
-            fields: vec![StorageCollectionField {
-                name: "name".to_string(),
-                field_type: FieldType::String,
-            }],
-            ..Default::default()
-        })
-        .await;
-
-    assert_eq!(schema.is_ok(), true);
+    let mut collections = Collections::new(instance).await;
 
     let mut rows = vec![];
 
     for i in 0..5 {
-        let result = instance
-            .insert_data_into_collection(
+        let result = collections
+            .insert(
                 table_name.to_string(),
                 json!({ "name": format!("test_{}", i) }),
             )
@@ -72,13 +58,13 @@ async fn collection_where() {
 
     // test eq
 
-    let where_clause_eq = HashMap::from_iter([(
-        "id".to_string(),
-        WhereAttr::Eq(Value::String(test_row_0.id.to_string())),
-    )]);
+    let query_string = format!(r#"{{"id": "{}" }}"#, test_row_0.id);
 
-    let result_eq = instance
-        .list_data_from_collection(table_name.to_string(), where_clause_eq)
+    let result_eq = collections
+        .list(
+            table_name.to_string(),
+            serde_json::from_str(query_string.as_str()).unwrap(),
+        )
         .await;
 
     assert_eq!(result_eq.is_ok(), true);
@@ -88,20 +74,24 @@ async fn collection_where() {
 
     let rows_eq = result_eq
         .into_iter()
-        .map(|row| serde_json::from_value::<CollectionResponse>(row).unwrap().id)
+        .map(|row| {
+            serde_json::from_value::<CollectionResponse>(row)
+                .unwrap()
+                .id
+        })
         .collect::<Vec<_>>();
 
     assert_eq!(rows_eq.get(0).unwrap(), &test_row_0.id);
 
     // test neq
 
-    let where_clause_ne = HashMap::from_iter([(
-        "id".to_string(),
-        WhereAttr::Ne(Value::String(test_row_0.id.to_string())),
-    )]);
+    let query_string = format!(r#"{{"id": {{"$ne": "{}"}} }}"#, test_row_0.id);
 
-    let result_ne = instance
-        .list_data_from_collection(table_name.to_string(), where_clause_ne)
+    let result_ne = collections
+        .list(
+            table_name.to_string(),
+            serde_json::from_str(query_string.as_str()).unwrap(),
+        )
         .await;
 
     assert_eq!(result_ne.is_ok(), true);
@@ -111,20 +101,27 @@ async fn collection_where() {
 
     let rows_ne = result_ne
         .into_iter()
-        .map(|row| serde_json::from_value::<CollectionResponse>(row).unwrap().id)
+        .map(|row| {
+            serde_json::from_value::<CollectionResponse>(row)
+                .unwrap()
+                .id
+        })
         .collect::<Vec<_>>();
 
     assert_eq!(rows_ne.contains(&test_row_0.id), false);
 
     // test in
 
-    let where_clause_in = HashMap::from_iter([(
-        "id".to_string(),
-        WhereAttr::In( vec![ Value::String(test_row_0.id.to_string()), Value::String(test_row_1.id.to_string()), Value::String("some value".to_string())  ] ),
-    )]);
+    let query_string = format!(
+        r#"{{"id": {{"$in": ["{}", "{}", "{}"] }} }}"#,
+        test_row_0.id, test_row_1.id, "some value"
+    );
 
-    let result_in = instance
-        .list_data_from_collection(table_name.to_string(), where_clause_in)
+    let result_in = collections
+        .list(
+            table_name.to_string(),
+            serde_json::from_str(query_string.as_str()).unwrap(),
+        )
         .await;
 
     assert_eq!(result_in.is_ok(), true);
@@ -134,22 +131,28 @@ async fn collection_where() {
 
     let rows_in = result_in
         .into_iter()
-        .map(|row| serde_json::from_value::<CollectionResponse>(row).unwrap().id)
+        .map(|row| {
+            serde_json::from_value::<CollectionResponse>(row)
+                .unwrap()
+                .id
+        })
         .collect::<Vec<_>>();
 
     assert_eq!(rows_in.contains(&test_row_0.id), true);
     assert_eq!(rows_in.contains(&test_row_1.id), true);
 
-
     // test nin
 
-    let where_clause_nin = HashMap::from_iter([(
-        "id".to_string(),
-        WhereAttr::Nin( vec![ Value::String(test_row_0.id.to_string()), Value::String(test_row_1.id.to_string()), Value::String("some value".to_string())  ] ),
-    )]);
+    let query_string = format!(
+        r#"{{"id": {{"$nin": ["{}", "{}", "{}"] }} }}"#,
+        test_row_0.id, test_row_1.id, "some value"
+    );
 
-    let result_nin = instance
-        .list_data_from_collection(table_name.to_string(), where_clause_nin)
+    let result_nin = collections
+        .list(
+            table_name.to_string(),
+            serde_json::from_str(query_string.as_str()).unwrap(),
+        )
         .await;
 
     assert_eq!(result_nin.is_ok(), true);
@@ -159,7 +162,11 @@ async fn collection_where() {
 
     let rows_nin = result_nin
         .into_iter()
-        .map(|row| serde_json::from_value::<CollectionResponse>(row).unwrap().id)
+        .map(|row| {
+            serde_json::from_value::<CollectionResponse>(row)
+                .unwrap()
+                .id
+        })
         .collect::<Vec<_>>();
 
     assert_eq!(rows_nin.contains(&test_row_0.id), false);

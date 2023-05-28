@@ -3,15 +3,12 @@ use std::iter;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use sqlx::{PgPool, Pool, Postgres, Row};
-use sqlx::Arguments;
 use sqlx::postgres::PgArguments;
+use sqlx::Arguments;
+use sqlx::{PgPool, Pool, Postgres, Row};
 use tracing::{debug, error, info};
 
-use collection::{
-    FieldType, make_id, StorageCollection, StorageCollectionField, StorageCollectionTrait,
-    StorageError, WhereAttr,
-};
+use collection::{make_id, Collection, CollectionField, FieldType, Storage, StorageError, Where};
 
 use crate::add_value_into_args::add_value_into_args;
 use crate::serialize_pg_row::serialize_pg_row;
@@ -39,7 +36,7 @@ impl StorePostgresql {
         Self { pool }
     }
 
-    fn query_field_to_collection(schema: String, field: &StorageCollectionField) -> String {
+    fn query_field_to_collection(schema: String, field: &CollectionField) -> String {
         match field.field_type {
             FieldType::String => format!(r#"ALTER TABLE "{schema}" ADD "{}" text;"#, field.name),
             FieldType::Number => format!(
@@ -66,8 +63,8 @@ impl StorePostgresql {
 }
 
 #[async_trait]
-impl StorageCollectionTrait for StorePostgresql {
-    async fn get_collections(&self) -> anyhow::Result<Vec<StorageCollection>, StorageError> {
+impl Storage for StorePostgresql {
+    async fn get_collections(&self) -> anyhow::Result<Vec<Collection>, StorageError> {
         let schemas: Vec<StoreCollectionQuery> =
             sqlx::query_as(r#"SELECT * FROM storage_collection_schema"#)
                 .fetch_all(&self.pool)
@@ -80,7 +77,7 @@ impl StorageCollectionTrait for StorePostgresql {
     async fn get_collection(
         &self,
         collection_name: String,
-    ) -> anyhow::Result<StorageCollection, StorageError> {
+    ) -> anyhow::Result<Collection, StorageError> {
         let schema: Option<StoreCollectionQuery> =
             sqlx::query_as(r#"SELECT * FROM storage_collection_schema WHERE name = $1"#)
                 .bind(collection_name.to_string())
@@ -99,8 +96,8 @@ impl StorageCollectionTrait for StorePostgresql {
 
     async fn create_collection(
         &self,
-        collection: StorageCollection,
-    ) -> anyhow::Result<StorageCollection, StorageError> {
+        collection: Collection,
+    ) -> anyhow::Result<Collection, StorageError> {
         let collection_name = collection.name.to_string();
         let mut transaction = self.pool.begin().await.expect("transaction failed");
 
@@ -161,22 +158,22 @@ impl StorageCollectionTrait for StorePostgresql {
             }
         }
 
-        if id_exists == false {
-            fields.push(StorageCollectionField {
+        if !id_exists {
+            fields.push(CollectionField {
                 name: ID_FIELD.to_string(),
                 field_type: FieldType::String,
             });
         }
 
-        if created_at_exists == false {
-            fields.push(StorageCollectionField {
+        if !created_at_exists {
+            fields.push(CollectionField {
                 name: CREATED_AT_FIELD.to_string(),
                 field_type: FieldType::TimeStamp,
             });
         }
 
-        if updated_at_exists == false {
-            fields.push(StorageCollectionField {
+        if !updated_at_exists {
+            fields.push(CollectionField {
                 name: UPDATED_AT_FIELD.to_string(),
                 field_type: FieldType::TimeStamp,
             });
@@ -209,7 +206,7 @@ impl StorageCollectionTrait for StorePostgresql {
         self.get_collection(collection.name.to_string()).await
     }
 
-    async fn remove_collection(&self, collection: StorageCollection) -> Result<(), StorageError> {
+    async fn remove_collection(&self, collection: Collection) -> Result<(), StorageError> {
         let collection_name = collection.name.to_string();
         let collection = self.get_collection(collection_name.to_string()).await;
 
@@ -220,9 +217,10 @@ impl StorageCollectionTrait for StorePostgresql {
         }
 
         let mut transaction = self.pool.begin().await.expect("transaction failed");
-        let query = format!(r#"DROP TABLE storage_collection_schema"#);
 
-        let drop_table = sqlx::query(query.as_str()).execute(&mut transaction).await;
+        let drop_table = sqlx::query(r#"DROP TABLE storage_collection_schema"#)
+            .execute(&mut transaction)
+            .await;
 
         if drop_table.is_err() {
             error!("drop_table: {:?}", drop_table.unwrap_err());
@@ -254,10 +252,9 @@ impl StorageCollectionTrait for StorePostgresql {
 
     async fn insert_field_to_collection(
         &self,
-        collection: StorageCollection,
-        field: StorageCollectionField,
-    ) -> anyhow::Result<StorageCollection, StorageError> {
-        let collection_name = collection.name.to_string();
+        collection_name: String,
+        field: CollectionField,
+    ) -> anyhow::Result<Collection, StorageError> {
         let collection = self.get_collection(collection_name.to_string()).await;
 
         if collection.is_err() {
@@ -268,7 +265,7 @@ impl StorageCollectionTrait for StorePostgresql {
 
         let collection = collection.unwrap();
 
-        if collection.fields.iter().any(|f| f.name == field.name) == true {
+        if collection.fields.iter().any(|f| f.name == field.name) {
             return Err(StorageError::CollectionFieldExists {
                 collection: collection.name,
                 field: field.name,
@@ -314,10 +311,9 @@ impl StorageCollectionTrait for StorePostgresql {
 
     async fn remove_field_from_collection(
         &self,
-        collection: StorageCollection,
-        field: StorageCollectionField,
-    ) -> anyhow::Result<StorageCollection, StorageError> {
-        let collection_name = collection.name.to_string();
+        collection_name: String,
+        field: CollectionField,
+    ) -> anyhow::Result<Collection, StorageError> {
         let collection = self.get_collection(collection_name.to_string()).await;
 
         if collection.is_err() {
@@ -388,10 +384,16 @@ impl StorageCollectionTrait for StorePostgresql {
         collection_name: String,
         data: Value,
     ) -> anyhow::Result<Value, StorageError> {
-        let collection = self
-            .get_collection(collection_name.to_string())
-            .await
-            .unwrap();
+        let collection = self.get_collection(collection_name.to_string()).await;
+
+        if collection.is_err() {
+            return Err(StorageError::CollectionNotFound {
+                collection: collection_name,
+            });
+        }
+
+        let collection = collection.unwrap();
+
         let mut arguments = PgArguments::default();
 
         let mut insert_fields = vec![];
@@ -404,12 +406,12 @@ impl StorageCollectionTrait for StorePostgresql {
                 }
                 ID_FIELD => {
                     let id = match data.get(field.name.as_str()) {
-                        Some(v) => format!("{}", v.as_str().unwrap_or(&make_id(10))),
+                        Some(v) => v.as_str().unwrap_or(&make_id(10)).to_string(),
                         None => make_id(10),
                     };
 
                     insert_fields.push(field.name.to_string());
-                    insert_indexes.push(format!("${}", counter));
+                    insert_indexes.push(format!("${counter}"));
                     arguments.add(id);
                     counter += 1;
                 }
@@ -418,7 +420,7 @@ impl StorageCollectionTrait for StorePostgresql {
 
                     if let Some(v) = v {
                         insert_fields.push(field.name.to_string());
-                        insert_indexes.push(format!("${}", counter));
+                        insert_indexes.push(format!("${counter}"));
                         add_value_into_args(field, &v, &mut arguments);
                         counter += 1;
                     }
@@ -468,7 +470,7 @@ impl StorageCollectionTrait for StorePostgresql {
                 }
                 ID_FIELD => {
                     if let Some(id) = data.get(field.name.as_str()) {
-                        if id.is_null() == false {
+                        if !id.is_null() {
                             update_fields.push(format!("{} = ${counter}", field.name));
                             arguments.add(id);
                             counter += 1;
@@ -484,19 +486,19 @@ impl StorageCollectionTrait for StorePostgresql {
                 }
             }
         }
-        if update_fields.len() > 0 {
-            update_fields.push(format!("{} = NOW()", UPDATED_AT_FIELD));
+        if !update_fields.is_empty() {
+            update_fields.push(format!("{UPDATED_AT_FIELD} = NOW()"));
             arguments.add(collection_id.to_string());
             let update_fields = update_fields.join(", ");
 
             let _rec = sqlx::query_with(
-                format!(r#"UPDATE "{collection_name}" SET {update_fields} WHERE id = ${counter}"#, )
+                format!(r#"UPDATE "{collection_name}" SET {update_fields} WHERE id = ${counter}"#,)
                     .as_str(),
                 arguments,
             )
-                .execute(&self.pool)
-                .await
-                .expect("update error");
+            .execute(&self.pool)
+            .await
+            .expect("update error");
 
             info!("update_into_collection: {collection_name} with id: {collection_id}");
         }
@@ -552,7 +554,7 @@ impl StorageCollectionTrait for StorePostgresql {
     async fn list_data_from_collection(
         &self,
         collection: String,
-        query: HashMap<String, WhereAttr>,
+        query: HashMap<String, Where>,
     ) -> anyhow::Result<Vec<Value>, StorageError> {
         let collection = self.get_collection(collection.to_string()).await.unwrap();
 
@@ -561,48 +563,72 @@ impl StorageCollectionTrait for StorePostgresql {
         let mut counter = 1;
         for (key, value) in query {
             if let Some(field) = collection.get_field(&key) {
-                let (q, v) = match value {
-                    WhereAttr::Eq(v) => (format!(r#""{key}" = ${counter}"#, key = field.name), vec![v]),
-                    WhereAttr::Ne(v) => (format!(r#""{key}" != ${counter}"#, key = field.name), vec![v]),
-                    WhereAttr::Gt(v) => (format!(r#""{key}" > ${counter}"#, key = field.name), vec![v]),
-                    WhereAttr::Lt(v) => (format!(r#""{key}" < ${counter}"#, key = key), vec![v]),
-                    WhereAttr::Gte(v) => (format!(r#""{key}" >= ${counter}"#, key = key), vec![v]),
-                    WhereAttr::Lte(v) => (format!(r#""{key}" <= ${counter}"#, key = key), vec![v]),
-                    WhereAttr::In(v) => {
-                        let in_query =
-                            iter::repeat(v.len())
-                                .take(v.len())
-                                .enumerate()
-                                .map(|a| format!("${}", counter + a.0))
-                                .collect::<Vec<_>>()
-                                .join(", ");
-
-                        (
-                            format!(r#""{key}" = ANY(ARRAY[{in_query}])"#, key = key),
-                            v,
-                        )
-                    }
-                    WhereAttr::Nin(v) => {
-                        let in_query =
-                            iter::repeat(v.len())
-                                .take(v.len())
-                                .enumerate()
-                                .map(|a| format!("${}", counter + a.0))
-                                .collect::<Vec<_>>()
-                                .join(", ");
-
-                        (
-                            format!(r#"NOT("{key}" = ANY(ARRAY[{in_query}]))"#, key = key),
-                            v,
-                        )
-                    }
-                };
-
-                where_query.push(q);
-                for v1 in &v {
-                    add_value_into_args(field, &v1, &mut arguments);
+                if let Some(eq) = value.eq {
+                    where_query.push(format!(r#""{key}" = ${counter}"#));
+                    add_value_into_args(field, &eq, &mut arguments);
+                    counter += 1;
                 }
-                counter += v.len();
+
+                if let Some(ne) = value.ne {
+                    where_query.push(format!(r#""{key}" != ${counter}"#));
+                    add_value_into_args(field, &ne, &mut arguments);
+                    counter += 1;
+                }
+
+                if let Some(gt) = value.gt {
+                    where_query.push(format!(r#""{key}" > ${counter}"#));
+                    add_value_into_args(field, &gt, &mut arguments);
+                    counter += 1;
+                }
+
+                if let Some(gte) = value.gte {
+                    where_query.push(format!(r#""{key}" >= ${counter}"#));
+                    add_value_into_args(field, &gte, &mut arguments);
+                    counter += 1;
+                }
+
+                if let Some(lt) = value.lt {
+                    where_query.push(format!(r#""{key}" < ${counter}"#));
+                    add_value_into_args(field, &lt, &mut arguments);
+                    counter += 1;
+                }
+
+                if let Some(lte) = value.lte {
+                    where_query.push(format!(r#""{key}" <= ${counter}"#));
+                    add_value_into_args(field, &lte, &mut arguments);
+                    counter += 1;
+                }
+
+                if let Some(in_) = value.in_ {
+                    let in_query = iter::repeat(in_.len())
+                        .take(in_.len())
+                        .enumerate()
+                        .map(|a| format!("${}", counter + a.0))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    where_query.push(format!(r#""{key}" = ANY(ARRAY[{in_query}])"#));
+                    counter += in_.len();
+
+                    for v in in_ {
+                        add_value_into_args(field, &v, &mut arguments);
+                    }
+                }
+
+                if let Some(nin) = value.nin {
+                    let in_query = iter::repeat(nin.len())
+                        .take(nin.len())
+                        .enumerate()
+                        .map(|a| format!("${}", counter + a.0))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    where_query.push(format!(r#"NOT("{key}" = ANY(ARRAY[{in_query}]))"#));
+                    counter += nin.len();
+                    for v in nin {
+                        add_value_into_args(field, &v, &mut arguments);
+                    }
+                }
             }
         }
 

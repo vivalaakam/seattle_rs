@@ -3,21 +3,21 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
 #[derive(Clone, Default)]
-pub struct StorageCollection {
+pub struct Collection {
     pub name: String,
-    pub fields: Vec<StorageCollectionField>,
+    pub fields: Vec<CollectionField>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-impl StorageCollection {
-    pub fn get_field(&self, key: &String) -> Option<&StorageCollectionField> {
+impl Collection {
+    pub fn get_field(&self, key: &String) -> Option<&CollectionField> {
         self.fields.iter().find(|f| f.name == *key)
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct StorageCollectionField {
+pub struct CollectionField {
     pub name: String,
     pub field_type: FieldType,
 }

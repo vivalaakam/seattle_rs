@@ -1,4 +1,4 @@
-use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use tracing::{event, Level};
 
 use crate::App;

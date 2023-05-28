@@ -1,10 +1,10 @@
 use serde_json::Value;
-use sqlx::Arguments;
 use sqlx::postgres::PgArguments;
+use sqlx::Arguments;
 
-use collection::{FieldType, StorageCollectionField};
+use collection::{CollectionField, FieldType};
 
-pub fn add_value_into_args(field: &StorageCollectionField, value: &Value, args: &mut PgArguments) {
+pub fn add_value_into_args(field: &CollectionField, value: &Value, args: &mut PgArguments) {
     match field.field_type {
         FieldType::String | FieldType::Array | FieldType::Object => {
             args.add(value.as_str());
