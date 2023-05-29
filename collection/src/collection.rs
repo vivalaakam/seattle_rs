@@ -10,7 +10,7 @@ const ID_FIELD: &str = "id";
 const CREATED_AT_FIELD: &str = "created_at";
 const UPDATED_AT_FIELD: &str = "updated_at";
 
-const SKIP_FIELDS: [&'static str; 3] = [ID_FIELD, CREATED_AT_FIELD, UPDATED_AT_FIELD];
+const SKIP_FIELDS: [&str; 3] = [ID_FIELD, CREATED_AT_FIELD, UPDATED_AT_FIELD];
 
 #[derive(Clone, Default)]
 pub struct Collection {

@@ -78,9 +78,7 @@ impl<T> Collections<T>
 
         let collection = collection.unwrap();
 
-        if let Err(err) = collection.validate(&data) {
-            return Err(err);
-        }
+        collection.validate(&data)?;
 
         match self
             .storage
@@ -112,15 +110,15 @@ impl<T> Collections<T>
             });
         }
 
-        let collection = collection.unwrap();
+        let mut collection = collection.unwrap();
 
         let fields = collection.get_new_fields(&data);
 
         if !fields.is_empty() {
-            let mut collection = collection.clone();
+            let mut coll = collection.clone();
 
             for field in fields {
-                collection = self
+                coll = self
                     .storage
                     .insert_field_to_collection(collection_name.to_string(), field)
                     .await
@@ -128,12 +126,12 @@ impl<T> Collections<T>
             }
 
             self.collections
-                .insert(collection_name.to_string(), collection);
+                .insert(collection_name.to_string(), coll);
+
+            collection = self.collections.get(&collection_name).unwrap();
         }
 
-        if let Err(err) = collection.validate(&data) {
-            return Err(err);
-        }
+        collection.validate(&data)?;
 
         match self
             .storage

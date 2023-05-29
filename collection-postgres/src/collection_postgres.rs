@@ -3,12 +3,12 @@ use std::iter;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use sqlx::postgres::PgArguments;
-use sqlx::Arguments;
 use sqlx::{PgPool, Pool, Postgres, Row};
+use sqlx::Arguments;
+use sqlx::postgres::PgArguments;
 use tracing::{debug, error, info};
 
-use collection::{make_id, Collection, CollectionField, FieldType, Storage, StorageError, Where};
+use collection::{Collection, CollectionField, FieldType, make_id, Storage, StorageError, Where};
 
 use crate::add_value_into_args::add_value_into_args;
 use crate::serialize_pg_row::serialize_pg_row;
@@ -78,20 +78,15 @@ impl Storage for StorePostgresql {
         &self,
         collection_name: String,
     ) -> anyhow::Result<Collection, StorageError> {
-        let schema: Option<StoreCollectionQuery> =
-            sqlx::query_as(r#"SELECT * FROM storage_collection_schema WHERE name = $1"#)
-                .bind(collection_name.to_string())
-                .fetch_optional(&self.pool)
-                .await
-                .unwrap_or_default();
-
-        if schema.is_none() {
-            return Err(StorageError::CollectionNotFound {
+        sqlx::query_as(r#"SELECT * FROM storage_collection_schema WHERE name = $1"#)
+            .bind(collection_name.to_string())
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap_or_default()
+            .map(|schema: StoreCollectionQuery| schema.into())
+            .ok_or(StorageError::CollectionNotFound {
                 collection: collection_name,
-            });
-        }
-
-        Ok(schema.unwrap().into())
+            })
     }
 
     async fn create_collection(
@@ -101,14 +96,16 @@ impl Storage for StorePostgresql {
         let collection_name = collection.name.to_string();
         let mut transaction = self.pool.begin().await.expect("transaction failed");
 
-        let query = format!(r#"
+        let query = format!(
+            r#"
         CREATE TABLE IF NOT EXISTS "{collection_name}"
             (
                 id          VARCHAR                  NOT NULL PRIMARY KEY,
                 created_at  TIMESTAMP with time zone NOT NULL,
                 updated_at  TIMESTAMP with time zone NOT NULL
             );
-        "#);
+        "#
+        );
 
         let create_table = sqlx::query(query.as_str()).execute(&mut transaction).await;
 
@@ -489,13 +486,13 @@ impl Storage for StorePostgresql {
             let update_fields = update_fields.join(", ");
 
             let _rec = sqlx::query_with(
-                format!(r#"UPDATE "{collection_name}" SET {update_fields} WHERE id = ${counter}"#,)
+                format!(r#"UPDATE "{collection_name}" SET {update_fields} WHERE id = ${counter}"#, )
                     .as_str(),
                 arguments,
             )
-            .execute(&self.pool)
-            .await
-            .expect("update error");
+                .execute(&self.pool)
+                .await
+                .expect("update error");
 
             info!("update_into_collection: {collection_name} with id: {collection_id}");
         }
@@ -525,27 +522,23 @@ impl Storage for StorePostgresql {
         collection_name: String,
         collection_id: String,
     ) -> anyhow::Result<Value, StorageError> {
-        let query = format!(r#"SELECT * FROM "{collection_name}" WHERE id = $1"#);
-
-        let value = sqlx::query(query.as_str())
-            .bind(collection_id.to_string())
-            .fetch_optional(&self.pool)
-            .await
-            .unwrap_or_default();
-
-        if value.is_none() {
-            return Err(StorageError::ValueNotFound {
-                collection: collection_name,
-                id: collection_id,
-            });
-        }
-
         let collection = self
             .get_collection(collection_name.to_string())
             .await
             .unwrap();
 
-        Ok(serialize_pg_row(&collection, value.unwrap()))
+        let query = format!(r#"SELECT * FROM "{collection_name}" WHERE id = $1"#);
+
+        sqlx::query(query.as_str())
+            .bind(collection_id.to_string())
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap_or_default()
+            .map(|row| serialize_pg_row(&collection, row))
+            .ok_or(StorageError::ValueNotFound {
+                collection: collection_name,
+                id: collection_id,
+            })
     }
 
     async fn list_data_from_collection(
