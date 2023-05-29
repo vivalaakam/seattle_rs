@@ -101,17 +101,14 @@ impl Storage for StorePostgresql {
         let collection_name = collection.name.to_string();
         let mut transaction = self.pool.begin().await.expect("transaction failed");
 
-        let query = format!(
-            r#"
-        CREATE TABLE IF NOT EXISTS "{}"
+        let query = format!(r#"
+        CREATE TABLE IF NOT EXISTS "{collection_name}"
             (
                 id          VARCHAR                  NOT NULL PRIMARY KEY,
                 created_at  TIMESTAMP with time zone NOT NULL,
                 updated_at  TIMESTAMP with time zone NOT NULL
             );
-        "#,
-            collection_name
-        );
+        "#);
 
         let create_table = sqlx::query(query.as_str()).execute(&mut transaction).await;
 

@@ -6,3 +6,9 @@ impl App {
         Self {}
     }
 }
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
