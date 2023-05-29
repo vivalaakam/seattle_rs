@@ -1,10 +1,16 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::CollectionError;
+
 const ID_FIELD: &str = "id";
 const CREATED_AT_FIELD: &str = "created_at";
 const UPDATED_AT_FIELD: &str = "updated_at";
+
+const SKIP_FIELDS: [&'static str; 3] = [ID_FIELD, CREATED_AT_FIELD, UPDATED_AT_FIELD];
 
 #[derive(Clone, Default)]
 pub struct Collection {
@@ -30,11 +36,7 @@ impl Collection {
             .unwrap()
             .iter()
             .filter(|(key, value)| {
-                !exists.contains(key)
-                    && key.as_str() != ID_FIELD
-                    && key.as_str() != CREATED_AT_FIELD
-                    && key.as_str() != UPDATED_AT_FIELD
-                    && !value.is_null()
+                !exists.contains(key) && !SKIP_FIELDS.contains(&key.as_str()) && !value.is_null()
             })
             .map(|(key, value)| CollectionField {
                 name: key.to_string(),
@@ -48,6 +50,48 @@ impl Collection {
                 },
             })
             .collect::<Vec<_>>()
+    }
+
+    pub fn validate(&self, data: &Value) -> Result<(), CollectionError> {
+        if !data.is_object() {
+            return Err(CollectionError::CollectionInputData {
+                collection: self.name.clone(),
+            });
+        }
+
+        let exists: HashMap<String, FieldType> = HashMap::from_iter(
+            self.fields
+                .iter()
+                .map(|field| (field.name.to_string(), field.field_type.clone())),
+        );
+
+        let fields = data
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(key, value)| match exists.get(key) {
+                None => None,
+                Some(field) => match field {
+                    FieldType::String | FieldType::TimeStamp => {
+                        (!(value.is_string() || value.is_null())).then_some(key)
+                    }
+                    FieldType::Number => (!(value.is_number() || value.is_null())).then_some(key),
+                    FieldType::Boolean => (!(value.is_boolean() || value.is_null())).then_some(key),
+                    FieldType::Array => (!(value.is_array() || value.is_null())).then_some(key),
+                    FieldType::Object => (!(value.is_object() || value.is_null())).then_some(key),
+                },
+            })
+            .filter(|key| key.is_some())
+            .map(|key| key.unwrap().to_string())
+            .collect::<Vec<_>>();
+
+        match fields.is_empty() {
+            true => Ok(()),
+            false => Err(CollectionError::ValidateFields {
+                collection: self.name.clone(),
+                fields,
+            }),
+        }
     }
 }
 

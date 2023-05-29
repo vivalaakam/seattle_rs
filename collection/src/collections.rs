@@ -41,7 +41,9 @@ impl<T> Collections<T>
             });
         }
 
-        if !self.collections.contains_key(&collection_name) {
+        let mut collection = self.collections.get(&collection_name);
+
+        if collection.is_none() {
             let schema = self
                 .storage
                 .create_collection(Collection {
@@ -57,18 +59,27 @@ impl<T> Collections<T>
                 });
             }
 
-            let mut collection = schema.unwrap();
+            let mut coll = schema.unwrap();
 
-            for field in collection.get_new_fields(&data) {
-                collection = self
+            for field in coll.get_new_fields(&data) {
+                coll = self
                     .storage
                     .insert_field_to_collection(collection_name.to_string(), field)
                     .await
                     .unwrap();
             }
 
+
             self.collections
-                .insert(collection_name.to_string(), collection);
+                .insert(collection_name.to_string(), coll);
+
+            collection = self.collections.get(&collection_name);
+        }
+
+        let collection = collection.unwrap();
+
+        if let Err(err) = collection.validate(&data) {
+            return Err(err);
         }
 
         match self
@@ -118,6 +129,10 @@ impl<T> Collections<T>
 
             self.collections
                 .insert(collection_name.to_string(), collection);
+        }
+
+        if let Err(err) = collection.validate(&data) {
+            return Err(err);
         }
 
         match self
