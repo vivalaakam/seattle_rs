@@ -1943,9 +1943,14 @@ dependencies = [
 name = "store"
 version = "0.1.0"
 dependencies = [
+ "actix-http",
  "actix-web",
+ "collection",
+ "collection-postgres",
  "dotenv",
  "sentry",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

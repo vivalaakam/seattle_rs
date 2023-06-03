@@ -12,8 +12,12 @@ use crate::where_attr::Where;
 pub trait Storage {
     async fn get_collections(&self) -> Result<Vec<Collection>, StorageError>;
     async fn get_collection(&self, collection_name: String) -> Result<Collection, StorageError>;
-    async fn create_collection(&self, collection: Collection) -> Result<Collection, StorageError>;
-    async fn remove_collection(&self, collection: Collection) -> Result<(), StorageError>;
+    async fn create_collection(
+        &self,
+        collection_name: String,
+        fields: Vec<CollectionField>,
+    ) -> Result<Collection, StorageError>;
+    async fn remove_collection(&self, collection_name: String) -> Result<(), StorageError>;
     async fn insert_field_to_collection(
         &self,
         collection_name: String,

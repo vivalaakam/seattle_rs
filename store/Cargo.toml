@@ -13,8 +13,13 @@ name = "metadata"
 
 [dependencies]
 tokio = { workspace = true }
+serde = { workspace = true }
 sentry = { workspace = true }
 dotenv = { workspace = true }
 tracing = { workspace = true }
 actix-web = { workspace = true }
+actix-http = { workspace = true }
+collection = { workspace = true }
+serde_json = { workspace = true }
 tracing-subscriber = { workspace = true }
+collection-postgres = { workspace = true }

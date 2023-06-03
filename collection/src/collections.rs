@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use serde_json::Value;
@@ -7,8 +8,9 @@ use crate::{Collection, Storage};
 use crate::collection_error::CollectionError;
 use crate::where_attr::Where;
 
+#[derive(Clone)]
 pub struct Collections<T> {
-    pub collections: HashMap<String, Collection>,
+    pub collections: Arc<Mutex<HashMap<String, Collection>>>,
     pub storage: T,
 }
 
@@ -25,13 +27,17 @@ impl<T> Collections<T>
             .map(|collection| (collection.name.clone(), collection));
 
         Self {
-            collections: HashMap::from_iter(collections),
+            collections: Arc::new(Mutex::new(HashMap::from_iter(collections))),
             storage,
         }
     }
 
+    pub fn get_storage(&self) -> &T {
+        &self.storage
+    }
+
     pub async fn insert(
-        &mut self,
+        &self,
         collection_name: String,
         data: Value,
     ) -> Result<Value, CollectionError> {
@@ -41,16 +47,14 @@ impl<T> Collections<T>
             });
         }
 
-        let mut collection = self.collections.get(&collection_name);
+        let mut collections = self.collections.lock().unwrap();
+
+        let mut collection = collections.get(&collection_name);
 
         if collection.is_none() {
             let schema = self
                 .storage
-                .create_collection(Collection {
-                    name: collection_name.to_string(),
-                    fields: vec![],
-                    ..Default::default()
-                })
+                .create_collection(collection_name.to_string(), vec![])
                 .await;
 
             if schema.is_err() {
@@ -69,11 +73,9 @@ impl<T> Collections<T>
                     .unwrap();
             }
 
+            collections.insert(collection_name.to_string(), coll);
 
-            self.collections
-                .insert(collection_name.to_string(), coll);
-
-            collection = self.collections.get(&collection_name);
+            collection = collections.get(&collection_name);
         }
 
         let collection = collection.unwrap();
@@ -91,7 +93,7 @@ impl<T> Collections<T>
     }
 
     pub async fn update(
-        &mut self,
+        &self,
         collection_name: String,
         collection_id: String,
         data: Value,
@@ -102,7 +104,8 @@ impl<T> Collections<T>
             });
         }
 
-        let collection = self.collections.get(&collection_name);
+        let mut collections = self.collections.lock().unwrap();
+        let collection = collections.get(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
@@ -125,10 +128,9 @@ impl<T> Collections<T>
                     .unwrap();
             }
 
-            self.collections
-                .insert(collection_name.to_string(), coll);
+            collections.insert(collection_name.to_string(), coll);
 
-            collection = self.collections.get(&collection_name).unwrap();
+            collection = collections.get(&collection_name).unwrap();
         }
 
         collection.validate(&data)?;
@@ -147,7 +149,8 @@ impl<T> Collections<T>
         collection_name: String,
         collection_id: String,
     ) -> Result<(), CollectionError> {
-        let collection = self.collections.get(&collection_name);
+        let collections = self.collections.lock().unwrap();
+        let collection = collections.get(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
@@ -169,7 +172,8 @@ impl<T> Collections<T>
         collection_name: String,
         collection_id: String,
     ) -> Result<Value, CollectionError> {
-        let collection = self.collections.get(&collection_name);
+        let collections = self.collections.lock().unwrap();
+        let collection = collections.get(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
@@ -191,7 +195,8 @@ impl<T> Collections<T>
         collection_name: String,
         query: Value,
     ) -> Result<Vec<Value>, CollectionError> {
-        let collection = self.collections.get(&collection_name);
+        let collections = self.collections.lock().unwrap();
+        let collection = collections.get(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {

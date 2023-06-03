@@ -1,14 +1,19 @@
-#[derive(Clone)]
-pub struct App {}
+use collection::{Collections, Storage};
 
-impl App {
-    pub fn new() -> Self {
-        Self {}
-    }
+#[derive(Clone)]
+pub struct App<T> {
+    collections: Collections<T>,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
+impl<T> App<T>
+where
+    T: Storage,
+{
+    pub fn new(collections: Collections<T>) -> Self {
+        Self { collections }
+    }
+
+    pub fn get_collections(&self) -> &Collections<T> {
+        &self.collections
     }
 }

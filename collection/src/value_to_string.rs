@@ -33,7 +33,7 @@ impl JsonFormatter {
     }
 }
 
-pub fn serialize_value(value: Value) -> String {
+pub fn value_to_string(value: Value) -> String {
     let mut writer = Vec::new();
     let mut ser = serde_json::Serializer::with_formatter(&mut writer, JsonFormatter::new());
     value.serialize(&mut ser).unwrap();
@@ -47,7 +47,7 @@ pub fn serialize_value(value: Value) -> String {
 mod tests {
     use serde_json::json;
 
-    use crate::serialize_value;
+    use crate::value_to_string;
 
     #[test]
     fn serialize_value_test() {
@@ -61,7 +61,7 @@ mod tests {
                 "g": ["i", 1.0, 1.2]
             }
         });
-        let item = serialize_value(data);
+        let item = value_to_string(data);
 
         assert_eq!(
             item,

@@ -6,7 +6,7 @@ use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, serialize_value};
+use collection::{Collections, value_to_string};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -51,7 +51,7 @@ async fn collection_get() {
 
     assert_eq!(created.is_ok(), true);
 
-    let created = serialize_value(created.unwrap());
+    let created = value_to_string(created.unwrap());
 
     info!("created: {created}");
 
@@ -68,7 +68,7 @@ async fn collection_get() {
 
     assert_eq!(check.is_ok(), true);
 
-    let check = serialize_value(check.unwrap());
+    let check = value_to_string(check.unwrap());
 
     let check_row = serde_json::from_str::<CollectionResponse>(&check).unwrap();
 

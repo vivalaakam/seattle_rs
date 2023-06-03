@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, serialize_value};
+use collection::{Collections, value_to_string};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -50,7 +50,7 @@ async fn collection_where() {
 
         assert_eq!(result.is_ok(), true);
 
-        let result = serialize_value(result.unwrap());
+        let result = value_to_string(result.unwrap());
 
         let row = serde_json::from_str::<CollectionResponse>(&result).unwrap();
 

@@ -5,6 +5,8 @@ use actix_web::{web, App as WebApp, HttpServer};
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format;
+use collection::Collections;
+use collection_postgres::StorePostgresql;
 
 use store::{routes, App};
 
@@ -33,14 +35,22 @@ async fn main() -> std::io::Result<()> {
         },
     ));
 
-    let app = App::new();
+
+    let database_url =
+        env::var("POSTGRES_DATABASE_URL").expect("POSTGRES_DATABASE_URL must be set");
+
+    let instance = StorePostgresql::new(database_url.as_str()).await;
+
+    let collections = Collections::new(instance).await;
+
+    let app = App::new(collections);
 
     let app_port = env::var("PORT").unwrap_or(String::from("8080"));
 
     HttpServer::new(move || {
         WebApp::new()
             .app_data(web::Data::new(app.clone()))
-            .configure(routes::config)
+            .configure(routes::config::<StorePostgresql>)
     })
     .bind(format!("0.0.0.0:{app_port}"))
     .expect("panic")
