@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use serde_json::Value;
 
+use crate::{Collection, Storage};
 use crate::collection_error::CollectionError;
 use crate::where_attr::Where;
-use crate::{Collection, Storage};
 
 #[derive(Clone)]
 pub struct Collections<T> {
@@ -14,9 +14,19 @@ pub struct Collections<T> {
     pub storage: T,
 }
 
+impl<T> Collections<T> where T: Storage {
+    fn get_collection(&self, key: &String) -> Option<Collection> {
+        self.collections.lock().unwrap().get(key).cloned()
+    }
+
+    fn set_collection(&self, key: &String, value: Collection) {
+        self.collections.lock().unwrap().insert(key.to_string(), value);
+    }
+}
+
 impl<T> Collections<T>
-where
-    T: Storage,
+    where
+        T: Storage,
 {
     pub async fn new(storage: T) -> Self {
         let collections = storage
@@ -47,9 +57,7 @@ where
             });
         }
 
-        let mut collections = self.collections.lock().unwrap();
-
-        let mut collection = collections.get(&collection_name);
+        let mut collection = self.get_collection(&collection_name);
 
         if collection.is_none() {
             let schema = self
@@ -73,9 +81,9 @@ where
                     .unwrap();
             }
 
-            collections.insert(collection_name.to_string(), coll);
+            self.set_collection(&collection_name, coll);
 
-            collection = collections.get(&collection_name);
+            collection = self.get_collection(&collection_name);
         }
 
         let collection = collection.unwrap();
@@ -104,8 +112,7 @@ where
             });
         }
 
-        let mut collections = self.collections.lock().unwrap();
-        let collection = collections.get(&collection_name);
+        let collection = self.get_collection(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
@@ -128,9 +135,9 @@ where
                     .unwrap();
             }
 
-            collections.insert(collection_name.to_string(), coll);
+            self.set_collection(&collection_name, coll);
 
-            collection = collections.get(&collection_name).unwrap();
+            collection = self.get_collection(&collection_name).unwrap()
         }
 
         collection.validate(&data)?;
@@ -172,8 +179,7 @@ where
         collection_name: String,
         collection_id: String,
     ) -> Result<Value, CollectionError> {
-        let collections = self.collections.lock().unwrap();
-        let collection = collections.get(&collection_name);
+        let collection = self.get_collection(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
@@ -195,8 +201,7 @@ where
         collection_name: String,
         query: Value,
     ) -> Result<Vec<Value>, CollectionError> {
-        let collections = self.collections.lock().unwrap();
-        let collection = collections.get(&collection_name);
+        let collection = self.get_collection(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
