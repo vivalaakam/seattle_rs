@@ -1,10 +1,10 @@
-use actix_web::{HttpResponse, web};
 use actix_web::http::header;
+use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
 use tracing::debug;
 
-use collection::{Storage, value_to_string};
+use collection::{value_to_string, Storage};
 
 use crate::App;
 
@@ -18,8 +18,8 @@ pub async fn collection_get<T>(
     path: web::Path<(String, String)>,
     app: web::Data<App<T>>,
 ) -> HttpResponse
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     debug!("collection_get {path:?}");
     let (collection_name, collection_id) = path.into_inner();
@@ -41,8 +41,8 @@ pub async fn collection_create<T>(
     data: web::Bytes,
     app: web::Data<App<T>>,
 ) -> HttpResponse
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     debug!("collection_create {path:?}");
     let collection_name = path.into_inner();
@@ -63,8 +63,8 @@ pub async fn collection_delete<T>(
     path: web::Path<(String, String)>,
     app: web::Data<App<T>>,
 ) -> HttpResponse
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     debug!("collection_delete {path:?}");
     let (collection_name, collection_id) = path.into_inner();
@@ -86,8 +86,8 @@ pub async fn collection_update<T>(
     data: web::Bytes,
     app: web::Data<App<T>>,
 ) -> HttpResponse
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     debug!("collection_update {path:?}");
     let (collection_name, collection_id) = path.into_inner();
@@ -112,8 +112,8 @@ pub async fn collection_query<T>(
     query: web::Query<CollectionQuery>,
     app: web::Data<App<T>>,
 ) -> HttpResponse
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     debug!("collection_query {path:?} {query:?}");
     let collection_name = path.into_inner();

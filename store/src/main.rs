@@ -2,11 +2,11 @@ use std::env;
 use std::str::FromStr;
 
 use actix_web::{web, App as WebApp, HttpServer};
+use collection::Collections;
+use collection_postgres::StorePostgresql;
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format;
-use collection::Collections;
-use collection_postgres::StorePostgresql;
 
 use store::{routes, App};
 
@@ -35,7 +35,6 @@ async fn main() -> std::io::Result<()> {
         },
     ));
 
-
     let database_url =
         env::var("POSTGRES_DATABASE_URL").expect("POSTGRES_DATABASE_URL must be set");
 
@@ -43,7 +42,10 @@ async fn main() -> std::io::Result<()> {
 
     let collections = Collections::new(instance).await;
 
-    let app = App::new(collections);
+    let app = App::new(
+        collections,
+        env::var("SECRET_CODE").expect("SECRET_CODE must be set"),
+    );
 
     let app_port = env::var("PORT").unwrap_or(String::from("8080"));
 

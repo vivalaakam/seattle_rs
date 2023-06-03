@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, value_to_string};
+use collection::{value_to_string, Collections};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 

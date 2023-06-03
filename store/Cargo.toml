@@ -21,5 +21,6 @@ actix-web = { workspace = true }
 actix-http = { workspace = true }
 collection = { workspace = true }
 serde_json = { workspace = true }
+actix-web-httpauth = { workspace = true }
 tracing-subscriber = { workspace = true }
 collection-postgres = { workspace = true }

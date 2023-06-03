@@ -1,13 +1,16 @@
-use std::io::Write;
 use serde::Serialize;
 use serde_json::Value;
+use std::io::Write;
 
 #[derive(Clone, Debug)]
 pub struct JsonFormatter {}
 
 impl serde_json::ser::Formatter for JsonFormatter {
     #[inline]
-    fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> std::io::Result<()> where W: ?Sized + Write {
+    fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> std::io::Result<()>
+    where
+        W: ?Sized + Write,
+    {
         let mut v = value.to_string();
         if v.ends_with(".0") {
             v.truncate(v.len() - 2)
@@ -17,7 +20,10 @@ impl serde_json::ser::Formatter for JsonFormatter {
     }
 
     #[inline]
-    fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> std::io::Result<()> where W: ?Sized + Write {
+    fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> std::io::Result<()>
+    where
+        W: ?Sized + Write,
+    {
         let mut v = value.to_string();
         if v.ends_with(".0") {
             v.truncate(v.len() - 2)
@@ -37,11 +43,8 @@ pub fn value_to_string(value: Value) -> String {
     let mut writer = Vec::new();
     let mut ser = serde_json::Serializer::with_formatter(&mut writer, JsonFormatter::new());
     value.serialize(&mut ser).unwrap();
-    unsafe {
-        String::from_utf8_unchecked(writer)
-    }
+    unsafe { String::from_utf8_unchecked(writer) }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -69,4 +72,3 @@ mod tests {
         );
     }
 }
-

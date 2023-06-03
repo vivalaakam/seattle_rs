@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::{Collection, Storage};
 use crate::collection_error::CollectionError;
 use crate::where_attr::Where;
+use crate::{Collection, Storage};
 
 #[derive(Clone)]
 pub struct Collections<T> {
@@ -15,8 +15,8 @@ pub struct Collections<T> {
 }
 
 impl<T> Collections<T>
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     pub async fn new(storage: T) -> Self {
         let collections = storage

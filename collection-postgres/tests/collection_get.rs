@@ -6,7 +6,7 @@ use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, value_to_string};
+use collection::{value_to_string, Collections};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 
@@ -82,5 +82,8 @@ async fn collection_get() {
 
     assert_eq!(check2.is_err(), true);
 
-    assert_eq!(format!("{check2:?}"), r#"Err(StorageError { error: ValueNotFound { collection: "Collection1", id: "not-exists" } })"#);
+    assert_eq!(
+        format!("{check2:?}"),
+        r#"Err(StorageError { error: ValueNotFound { collection: "Collection1", id: "not-exists" } })"#
+    );
 }

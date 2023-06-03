@@ -12,5 +12,8 @@ pub enum CollectionError {
     #[error("Collection not found: {collection}")]
     CollectionNotFound { collection: String },
     #[error("Invalid field data: {collection} - {fields:?}")]
-    ValidateFields { collection: String, fields: Vec<String> },
+    ValidateFields {
+        collection: String,
+        fields: Vec<String>,
+    },
 }
