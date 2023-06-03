@@ -2,29 +2,21 @@ use std::env;
 
 use actix_web::{test, web, App as WebApp};
 use dotenv::dotenv;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
 use collection::{Collections, Storage};
 use collection_postgres::StorePostgresql;
 use store::{routes, App};
 
+use crate::helpers::collection_response::CollectionResponse;
 use crate::helpers::create_request::create_request;
-use crate::helpers::get_request::get_request;
-use crate::helpers::update_request::update_request;
 
 mod helpers;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct CollectionResponse {
-    id: String,
-    name: String,
-    age: i32,
-}
-
 #[tokio::test]
-async fn store_update() {
+async fn store_unauthorized() {
     dotenv().ok();
 
     tracing_subscriber::fmt()
@@ -52,31 +44,22 @@ async fn store_update() {
             .app_data(web::Data::new(app.clone()))
             .configure(routes::config::<StorePostgresql>),
     )
-    .await;
+        .await;
+
+    let fake_code = "fake_code".to_string();
 
     let row = create_request::<_, CollectionResponse>(
         &web_app,
         &table_name,
         json!({"name": "test","age": 10}),
-        &secret_code,
+        &fake_code,
     )
-    .await;
+        .await;
 
-    assert!(row.is_ok());
+    info!("row = {row:?}");
 
-    let row = row.unwrap();
+    assert!(row.is_err());
+    let row = row.err();
 
-    let row_update = update_request::<_, CollectionResponse>(
-        &web_app,
-        &table_name,
-        &row.id,
-        json!({"name": "test2","age": 11}),
-        &secret_code
-    )
-    .await;
-
-    let row_check =
-        get_request::<_, CollectionResponse>(&web_app, &table_name, &row.id, &secret_code).await;
-
-    assert_eq!(row_update, row_check);
+    assert_eq!(format!("{row:?}") , r#"Some(ErrorResponse { error: "forbidden" })"#)
 }

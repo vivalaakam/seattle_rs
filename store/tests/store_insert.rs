@@ -53,13 +53,21 @@ async fn store_insert() {
     )
         .await;
 
-    let row: CollectionResponse =
-        create_request(&web_app, &table_name, json!({"name": "test","age": 10}), &secret_code).await;
+    let row =
+        create_request::<_, CollectionResponse>(&web_app, &table_name, json!({"name": "test","age": 10}), &secret_code).await;
+
+    assert!(row.is_ok());
+
+    let row = row.unwrap();
 
     assert_eq!(row.name, "test");
     assert_eq!(row.age, 10);
 
-    let check_row: CollectionResponse = get_request(&web_app, &table_name, &row.id, &secret_code).await;
+    let check_row = get_request::<_, CollectionResponse>(&web_app, &table_name, &row.id, &secret_code).await;
+
+    assert!(check_row.is_ok());
+
+    let check_row = check_row.unwrap();
 
     assert_eq!(row, check_row);
 }

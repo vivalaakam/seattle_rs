@@ -16,6 +16,7 @@ tokio = { workspace = true }
 serde = { workspace = true }
 sentry = { workspace = true }
 dotenv = { workspace = true }
+anyhow = { workspace = true }
 tracing = { workspace = true }
 actix-web = { workspace = true }
 actix-http = { workspace = true }

@@ -1,16 +1,17 @@
-use actix_http::body::to_bytes;
+use crate::helpers::error_response::ErrorResponse;
 use actix_http::Request;
 use actix_web::dev::{Service, ServiceResponse};
-use actix_web::{http, test, Error};
+use actix_web::{test, Error};
 use serde::de::DeserializeOwned;
-use tracing::info;
+
+use crate::helpers::handle_response::handle_response;
 
 pub async fn get_request<T1, T2>(
     web_app: &T1,
     collection_name: &String,
     collection_id: &String,
     secret_code: &String,
-) -> T2
+) -> anyhow::Result<T2, ErrorResponse>
 where
     T1: Service<Request, Response = ServiceResponse, Error = Error>,
     T2: DeserializeOwned,
@@ -23,10 +24,5 @@ where
         .to_request();
 
     let resp = web_app.call(req).await.unwrap();
-    assert_eq!(resp.status(), http::StatusCode::OK);
-
-    let row = to_bytes(resp.into_body()).await.unwrap();
-    info!("row: {:?}", row);
-
-    serde_json::from_slice(&row).unwrap()
+    handle_response(resp).await
 }

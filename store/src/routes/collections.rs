@@ -32,7 +32,7 @@ where
         Ok(data) => HttpResponse::Ok()
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .body(value_to_string(data)),
-        Err(error) => HttpResponse::InternalServerError().json(error),
+        Err(error) => HttpResponse::BadRequest().json(error),
     }
 }
 
@@ -55,7 +55,7 @@ where
         Ok(data) => HttpResponse::Ok()
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .body(value_to_string(data)),
-        Err(error) => HttpResponse::InternalServerError().json(error),
+        Err(error) => HttpResponse::BadRequest().json(error),
     }
 }
 
@@ -77,7 +77,7 @@ where
         Ok(_) => HttpResponse::Ok()
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .body(()),
-        Err(error) => HttpResponse::InternalServerError().json(error),
+        Err(error) => HttpResponse::BadRequest().json(error),
     }
 }
 
@@ -103,7 +103,7 @@ where
         Ok(data) => HttpResponse::Ok()
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .body(value_to_string(data)),
-        Err(error) => HttpResponse::InternalServerError().json(error),
+        Err(error) => HttpResponse::BadRequest().json(error),
     }
 }
 
@@ -128,6 +128,6 @@ where
         Ok(data) => HttpResponse::Ok()
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .body(value_to_string(json!(data))),
-        Err(error) => HttpResponse::InternalServerError().json(error),
+        Err(error) => HttpResponse::BadRequest().json(error),
     }
 }
