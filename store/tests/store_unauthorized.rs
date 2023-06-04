@@ -44,7 +44,7 @@ async fn store_unauthorized() {
             .app_data(web::Data::new(app.clone()))
             .configure(routes::config::<StorePostgresql>),
     )
-        .await;
+    .await;
 
     let fake_code = "fake_code".to_string();
 
@@ -54,12 +54,15 @@ async fn store_unauthorized() {
         json!({"name": "test","age": 10}),
         &fake_code,
     )
-        .await;
+    .await;
 
     info!("row = {row:?}");
 
     assert!(row.is_err());
     let row = row.err();
 
-    assert_eq!(format!("{row:?}") , r#"Some(ErrorResponse { error: "forbidden" })"#)
+    assert_eq!(
+        format!("{row:?}"),
+        r#"Some(ErrorResponse { error: "forbidden" })"#
+    )
 }

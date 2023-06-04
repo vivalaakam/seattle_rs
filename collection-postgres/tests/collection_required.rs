@@ -2,7 +2,7 @@ use std::env;
 
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use tracing::{debug, info};
 use tracing_subscriber::filter::LevelFilter;
 
@@ -19,7 +19,7 @@ pub struct CollectionResponse {
 }
 
 #[tokio::test]
-async fn collection_default() {
+async fn collection_required() {
     dotenv().ok();
 
     tracing_subscriber::fmt()
@@ -45,8 +45,8 @@ async fn collection_default() {
             vec![CollectionField {
                 name: "name".to_string(),
                 field_type: FieldType::String,
-                default: Some(Value::String("default_name".to_string())),
-                required: None,
+                default: None,
+                required: Some(true),
             }],
         )
         .await
@@ -58,15 +58,12 @@ async fn collection_default() {
 
     debug!("created_default {created_default:?}");
 
-    assert_eq!(created_default.is_ok(), true);
+    assert_eq!(created_default.is_err(), true);
 
-    let created_default = created_default.unwrap();
-
-    info!("created: {:?}", json!(created_default).to_string());
-
-    let row_default = serde_json::from_value::<CollectionResponse>(created_default).unwrap();
-
-    assert_eq!(row_default.name, "default_name");
+    assert_eq!(
+        format!("{created_default:?}"),
+        r#"Err(ValidateFields { collection: "Collection1", fields: ["name"] })"#
+    );
 
     let created_exists = collections
         .insert(

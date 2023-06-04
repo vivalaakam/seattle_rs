@@ -71,7 +71,7 @@ async fn store_update() {
         &table_name,
         &row.id,
         json!({"name": "test2","age": 11}),
-        &secret_code
+        &secret_code,
     )
     .await;
 

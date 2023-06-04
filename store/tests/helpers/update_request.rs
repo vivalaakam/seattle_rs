@@ -1,6 +1,6 @@
 use actix_http::Request;
-use actix_web::{Error, test};
 use actix_web::dev::{Service, ServiceResponse};
+use actix_web::{test, Error};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
@@ -14,9 +14,9 @@ pub async fn update_request<T1, T2>(
     data: Value,
     secret_code: &String,
 ) -> Result<T2, ErrorResponse>
-    where
-        T1: Service<Request, Response=ServiceResponse, Error=Error>,
-        T2: DeserializeOwned,
+where
+    T1: Service<Request, Response = ServiceResponse, Error = Error>,
+    T2: DeserializeOwned,
 {
     let req = test::TestRequest::put()
         .uri(&format!(

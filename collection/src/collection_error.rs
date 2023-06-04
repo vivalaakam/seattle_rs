@@ -16,4 +16,9 @@ pub enum CollectionError {
         collection: String,
         fields: Vec<String>,
     },
+    #[error("Required field data: {collection} - {fields:?}")]
+    RequiredFields {
+        collection: String,
+        fields: Vec<String>,
+    },
 }

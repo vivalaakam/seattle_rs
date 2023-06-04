@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::{Collection, Storage};
 use crate::collection_error::CollectionError;
 use crate::where_attr::Where;
+use crate::{Collection, Storage};
 
 #[derive(Clone)]
 pub struct Collections<T> {
@@ -14,19 +14,25 @@ pub struct Collections<T> {
     pub storage: T,
 }
 
-impl<T> Collections<T> where T: Storage {
+impl<T> Collections<T>
+where
+    T: Storage,
+{
     pub fn get_collection(&self, key: &String) -> Option<Collection> {
         self.collections.lock().unwrap().get(key).cloned()
     }
 
     pub fn set_collection(&self, key: &String, value: Collection) {
-        self.collections.lock().unwrap().insert(key.to_string(), value);
+        self.collections
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), value);
     }
 }
 
 impl<T> Collections<T>
-    where
-        T: Storage,
+where
+    T: Storage,
 {
     pub async fn new(storage: T) -> Self {
         let collections = storage
@@ -92,6 +98,8 @@ impl<T> Collections<T>
 
         let data = collection.default_values(data);
 
+        collection.required_values(&data, false)?;
+
         match self
             .storage
             .insert_data_into_collection(collection_name, data)
@@ -143,6 +151,8 @@ impl<T> Collections<T>
         }
 
         collection.validate(&data)?;
+
+        collection.required_values(&data, true)?;
 
         match self
             .storage

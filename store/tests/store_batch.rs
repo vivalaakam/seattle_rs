@@ -1,6 +1,6 @@
 use std::env;
 
-use actix_web::{App as WebApp, test, web};
+use actix_web::{test, web, App as WebApp};
 use dotenv::dotenv;
 use serde_json::json;
 use tracing::info;
@@ -8,7 +8,7 @@ use tracing_subscriber::filter::LevelFilter;
 
 use collection::{Collections, Storage};
 use collection_postgres::StorePostgresql;
-use store::{App, routes};
+use store::{routes, App};
 
 use crate::helpers::batch_request::{batch_request, CollectionAction};
 use crate::helpers::collection_response::CollectionResponse;
@@ -45,7 +45,7 @@ async fn store_batch() {
             .app_data(web::Data::new(app.clone()))
             .configure(routes::config::<StorePostgresql>),
     )
-        .await;
+    .await;
 
     let requests = vec![
         CollectionAction::Create {
@@ -67,7 +67,11 @@ async fn store_batch() {
     assert!(results.is_ok());
     let rows = results.unwrap();
 
-    let first_row = match rows.results.get(0).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    let first_row = match rows
+        .results
+        .get(0)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test1");
             assert_eq!(row.age, 30);
@@ -79,7 +83,11 @@ async fn store_batch() {
         }
     };
 
-    let second_row = match rows.results.get(1).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    let second_row = match rows
+        .results
+        .get(1)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test2");
             assert_eq!(row.age, 31);
@@ -91,7 +99,11 @@ async fn store_batch() {
         }
     };
 
-    let third_row = match rows.results.get(2).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    let third_row = match rows
+        .results
+        .get(2)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test3");
             assert_eq!(row.age, 32);
@@ -118,7 +130,8 @@ async fn store_batch() {
     }
 
     let check_row_2 =
-        get_request::<_, CollectionResponse>(&web_app, &table_name, &second_row, &secret_code).await;
+        get_request::<_, CollectionResponse>(&web_app, &table_name, &second_row, &secret_code)
+            .await;
 
     match check_row_2 {
         Ok(row) => {
@@ -148,7 +161,7 @@ async fn store_batch() {
         CollectionAction::Get {
             collection: table_name.to_string(),
             identifier: first_row,
-        }
+        },
     ];
 
     let results = batch_request(&web_app, requests, &secret_code).await;
@@ -156,27 +169,39 @@ async fn store_batch() {
     assert!(results.is_ok());
     let rows = results.unwrap();
 
-    match rows.results.get(0).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    match rows
+        .results
+        .get(0)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test4");
             assert_eq!(row.age, 34);
         }
-        _ => assert!(false)
+        _ => assert!(false),
     }
 
-    match rows.results.get(1).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    match rows
+        .results
+        .get(1)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test5");
             assert_eq!(row.age, 35);
         }
-        _ => assert!(false)
+        _ => assert!(false),
     }
 
-    match rows.results.get(3).map(|v| serde_json::from_value::<CollectionResponse>(v.clone())) {
+    match rows
+        .results
+        .get(3)
+        .map(|v| serde_json::from_value::<CollectionResponse>(v.clone()))
+    {
         Some(Ok(row)) => {
             assert_eq!(row.name, "test1");
             assert_eq!(row.age, 30);
         }
-        _ => assert!(false)
+        _ => assert!(false),
     }
 }

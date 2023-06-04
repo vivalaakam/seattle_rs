@@ -9,8 +9,8 @@ mod batch;
 mod collections;
 
 pub fn config<T>(conf: &mut web::ServiceConfig)
-    where
-        T: Storage + 'static,
+where
+    T: Storage + 'static,
 {
     let scope = web::scope("/api")
         .wrap(HttpAuthentication::bearer(validator::<T>))

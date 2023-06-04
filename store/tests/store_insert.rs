@@ -1,6 +1,6 @@
 use std::env;
 
-use actix_web::{App as WebApp, test, web};
+use actix_web::{test, web, App as WebApp};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -8,7 +8,7 @@ use tracing_subscriber::filter::LevelFilter;
 
 use collection::{Collections, Storage};
 use collection_postgres::StorePostgresql;
-use store::{App, routes};
+use store::{routes, App};
 
 use crate::helpers::create_request::create_request;
 use crate::helpers::get_request::get_request;
@@ -51,10 +51,15 @@ async fn store_insert() {
             .app_data(web::Data::new(app.clone()))
             .configure(routes::config::<StorePostgresql>),
     )
-        .await;
+    .await;
 
-    let row =
-        create_request::<_, CollectionResponse>(&web_app, &table_name, json!({"name": "test","age": 10}), &secret_code).await;
+    let row = create_request::<_, CollectionResponse>(
+        &web_app,
+        &table_name,
+        json!({"name": "test","age": 10}),
+        &secret_code,
+    )
+    .await;
 
     assert!(row.is_ok());
 
@@ -63,7 +68,8 @@ async fn store_insert() {
     assert_eq!(row.name, "test");
     assert_eq!(row.age, 10);
 
-    let check_row = get_request::<_, CollectionResponse>(&web_app, &table_name, &row.id, &secret_code).await;
+    let check_row =
+        get_request::<_, CollectionResponse>(&web_app, &table_name, &row.id, &secret_code).await;
 
     assert!(check_row.is_ok());
 

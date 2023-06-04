@@ -1,6 +1,6 @@
 use actix_http::Request;
-use actix_web::{Error, test};
 use actix_web::dev::{Service, ServiceResponse};
+use actix_web::{test, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -44,15 +44,13 @@ pub async fn batch_request<T1>(
     data: Vec<CollectionAction>,
     secret_code: &String,
 ) -> Result<BatchResponse, ErrorResponse>
-    where
-        T1: Service<Request, Response=ServiceResponse, Error=Error>
+where
+    T1: Service<Request, Response = ServiceResponse, Error = Error>,
 {
     let req = test::TestRequest::post()
         .uri(&format!("/api/batch"))
         .insert_header(("authorization", format!("Bearer {secret_code}")))
-        .set_json(json!({
-            "requests": data
-        }))
+        .set_json(json!({ "requests": data }))
         .to_request();
 
     let resp = web_app.call(req).await.unwrap();

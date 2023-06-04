@@ -28,29 +28,38 @@ pub enum CollectionAction {
 }
 
 impl CollectionAction {
-    pub async fn perform<T>(&self, app: &App<T>) -> Result<Value, CollectionError> where T: Storage {
+    pub async fn perform<T>(&self, app: &App<T>) -> Result<Value, CollectionError>
+    where
+        T: Storage,
+    {
         match self {
             CollectionAction::Create { collection, data } => {
-                app
-                    .get_collections()
+                app.get_collections()
                     .insert(collection.to_string(), data.clone())
                     .await
             }
-            CollectionAction::Update { collection, identifier, data } => {
-                app
-                    .get_collections()
+            CollectionAction::Update {
+                collection,
+                identifier,
+                data,
+            } => {
+                app.get_collections()
                     .update(collection.to_string(), identifier.to_string(), data.clone())
                     .await
             }
-            CollectionAction::Delete { collection, identifier } => {
-                app
-                    .get_collections()
+            CollectionAction::Delete {
+                collection,
+                identifier,
+            } => {
+                app.get_collections()
                     .delete(collection.to_string(), identifier.to_string())
                     .await
             }
-            CollectionAction::Get { collection, identifier } => {
-                app
-                    .get_collections()
+            CollectionAction::Get {
+                collection,
+                identifier,
+            } => {
+                app.get_collections()
                     .get(collection.to_string(), identifier.to_string())
                     .await
             }

@@ -41,6 +41,7 @@ impl Collection {
             .map(|(key, value)| CollectionField {
                 name: key.to_string(),
                 default: None,
+                required: None,
                 field_type: match value {
                     Value::String(_) => FieldType::String,
                     Value::Number(_) => FieldType::Number,
@@ -95,20 +96,47 @@ impl Collection {
         }
     }
 
-    pub fn default_values(&self, data: Value) -> Value {
-        let mut map = Map::new();
+    pub fn required_values(&self, data: &Value, only_exists: bool) -> Result<(), CollectionError> {
+        let fields = self
+            .fields
+            .iter()
+            .filter(|f| f.required.unwrap_or_default())
+            .filter(|f| {
+                if only_exists {
+                    data.get(f.name.to_string()).is_some()
+                } else {
+                    true
+                }
+            })
+            .filter(|f| {
+                data.get(f.name.to_string())
+                    .unwrap_or(&Value::Null)
+                    .is_null()
+            })
+            .map(|field| field.name.to_string())
+            .collect::<Vec<_>>();
 
-        for field in &self.fields {
-            let mut val = data.get(field.name.to_string()).unwrap_or(&Value::Null).clone();
+        match fields.is_empty() {
+            true => Ok(()),
+            false => Err(CollectionError::ValidateFields {
+                collection: self.name.clone(),
+                fields,
+            }),
+        }
+    }
+
+    pub fn default_values(&self, data: Value) -> Value {
+        let fields = self.fields.clone().into_iter().map(|f| {
+            let val = data.get(f.name.to_string()).unwrap_or(&Value::Null).clone();
 
             if val.is_null() {
-                val = field.default.clone().unwrap_or(Value::Null);
+                (f.name.to_string(), f.default.clone().unwrap_or(Value::Null))
+            } else {
+                (f.name.to_string(), val)
             }
+        });
 
-            map.insert(field.name.to_string(), val);
-        }
-
-        Value::Object(map)
+        Value::Object(Map::from_iter(fields))
     }
 }
 
@@ -117,6 +145,7 @@ pub struct CollectionField {
     pub name: String,
     pub field_type: FieldType,
     pub default: Option<Value>,
+    pub required: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]

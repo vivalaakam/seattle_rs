@@ -157,6 +157,7 @@ impl Storage for StorePostgresql {
             fields.push(CollectionField {
                 name: ID_FIELD.to_string(),
                 default: None,
+                required: None,
                 field_type: FieldType::String,
             });
         }
@@ -165,6 +166,7 @@ impl Storage for StorePostgresql {
             fields.push(CollectionField {
                 name: CREATED_AT_FIELD.to_string(),
                 default: None,
+                required: None,
                 field_type: FieldType::TimeStamp,
             });
         }
@@ -173,6 +175,7 @@ impl Storage for StorePostgresql {
             fields.push(CollectionField {
                 name: UPDATED_AT_FIELD.to_string(),
                 default: None,
+                required: None,
                 field_type: FieldType::TimeStamp,
             });
         }

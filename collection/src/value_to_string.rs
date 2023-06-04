@@ -8,8 +8,8 @@ pub struct JsonFormatter {}
 impl serde_json::ser::Formatter for JsonFormatter {
     #[inline]
     fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> std::io::Result<()>
-        where
-            W: ?Sized + Write,
+    where
+        W: ?Sized + Write,
     {
         let mut v = value.to_string();
         if v.ends_with(".0") {
@@ -21,8 +21,8 @@ impl serde_json::ser::Formatter for JsonFormatter {
 
     #[inline]
     fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> std::io::Result<()>
-        where
-            W: ?Sized + Write,
+    where
+        W: ?Sized + Write,
     {
         let mut v = value.to_string();
         if v.ends_with(".0") {
@@ -39,7 +39,10 @@ impl JsonFormatter {
     }
 }
 
-pub fn value_to_string<T>(value: T) -> String where T: Serialize {
+pub fn value_to_string<T>(value: T) -> String
+where
+    T: Serialize,
+{
     let mut writer = Vec::new();
     let mut ser = serde_json::Serializer::with_formatter(&mut writer, JsonFormatter::new());
     value.serialize(&mut ser).unwrap();
