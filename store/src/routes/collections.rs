@@ -1,12 +1,28 @@
 use actix_web::http::header;
 use actix_web::{web, HttpResponse};
-use serde::Deserialize;
-use serde_json::{json, Map, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use tracing::debug;
 
-use collection::{value_to_string, Storage};
+use collection::{value_to_string, CollectionError, Storage};
 
+use crate::collection_action::CollectionAction;
 use crate::App;
+
+fn perform_result<T>(result: Result<T, CollectionError>) -> HttpResponse
+where
+    T: Serialize,
+{
+    match result {
+        Ok(data) => HttpResponse::Ok()
+            .insert_header((header::CONTENT_TYPE, "application/json"))
+            .body(value_to_string(data)),
+        Err(CollectionError::CollectionNotFound { collection }) => {
+            HttpResponse::NotFound().json(collection)
+        }
+        Err(error) => HttpResponse::BadRequest().json(error),
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CollectionQuery {
@@ -24,16 +40,12 @@ where
     debug!("collection_get {path:?}");
     let (collection_name, collection_id) = path.into_inner();
 
-    match app
-        .get_collections()
-        .get(collection_name, collection_id)
-        .await
-    {
-        Ok(data) => HttpResponse::Ok()
-            .insert_header((header::CONTENT_TYPE, "application/json"))
-            .body(value_to_string(data)),
-        Err(error) => HttpResponse::BadRequest().json(error),
-    }
+    let action = CollectionAction::Get {
+        collection: collection_name,
+        identifier: collection_id,
+    };
+
+    perform_result(action.perform(&app).await)
 }
 
 pub async fn collection_create<T>(
@@ -47,16 +59,12 @@ where
     debug!("collection_create {path:?}");
     let collection_name = path.into_inner();
 
-    match app
-        .get_collections()
-        .insert(collection_name, serde_json::from_slice(&data).unwrap())
-        .await
-    {
-        Ok(data) => HttpResponse::Ok()
-            .insert_header((header::CONTENT_TYPE, "application/json"))
-            .body(value_to_string(data)),
-        Err(error) => HttpResponse::BadRequest().json(error),
-    }
+    let action = CollectionAction::Create {
+        collection: collection_name.to_string(),
+        data: serde_json::from_slice(&data).unwrap(),
+    };
+
+    perform_result(action.perform(&app).await)
 }
 
 pub async fn collection_delete<T>(
@@ -69,16 +77,12 @@ where
     debug!("collection_delete {path:?}");
     let (collection_name, collection_id) = path.into_inner();
 
-    match app
-        .get_collections()
-        .delete(collection_name, collection_id)
-        .await
-    {
-        Ok(_) => HttpResponse::Ok()
-            .insert_header((header::CONTENT_TYPE, "application/json"))
-            .body(()),
-        Err(error) => HttpResponse::BadRequest().json(error),
-    }
+    let action = CollectionAction::Delete {
+        collection: collection_name,
+        identifier: collection_id,
+    };
+
+    perform_result(action.perform(&app).await)
 }
 
 pub async fn collection_update<T>(
@@ -91,20 +95,14 @@ where
 {
     debug!("collection_update {path:?}");
     let (collection_name, collection_id) = path.into_inner();
-    match app
-        .get_collections()
-        .update(
-            collection_name,
-            collection_id,
-            serde_json::from_slice(&data).unwrap(),
-        )
-        .await
-    {
-        Ok(data) => HttpResponse::Ok()
-            .insert_header((header::CONTENT_TYPE, "application/json"))
-            .body(value_to_string(data)),
-        Err(error) => HttpResponse::BadRequest().json(error),
-    }
+
+    let action = CollectionAction::Update {
+        collection: collection_name,
+        identifier: collection_id,
+        data: serde_json::from_slice(&data).unwrap(),
+    };
+
+    perform_result(action.perform(&app).await)
 }
 
 pub async fn collection_query<T>(
@@ -124,10 +122,7 @@ where
         .map(|v| serde_json::from_str(v.as_str()).unwrap())
         .unwrap_or(Value::Object(Map::new()));
 
-    match app.get_collections().list(collection_name, query).await {
-        Ok(data) => HttpResponse::Ok()
-            .insert_header((header::CONTENT_TYPE, "application/json"))
-            .body(value_to_string(json!(data))),
-        Err(error) => HttpResponse::BadRequest().json(error),
-    }
+    let result = app.get_collections().list(collection_name, query).await;
+
+    perform_result(result)
 }

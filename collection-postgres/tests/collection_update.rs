@@ -37,7 +37,7 @@ async fn collections_update() {
 
     cleanup_table(instance.get_pool(), &table_name).await;
 
-    let mut collections = Collections::new(instance).await;
+    let collections = Collections::new(instance).await;
 
     let created = collections
         .insert(

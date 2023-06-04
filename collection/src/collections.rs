@@ -155,7 +155,7 @@ impl<T> Collections<T>
         &self,
         collection_name: String,
         collection_id: String,
-    ) -> Result<(), CollectionError> {
+    ) -> Result<Value, CollectionError> {
         let collections = self.collections.lock().unwrap();
         let collection = collections.get(&collection_name);
 
@@ -170,7 +170,7 @@ impl<T> Collections<T>
             .delete_data_from_collection(collection_name, collection_id)
             .await
         {
-            Ok(data) => Ok(data),
+            Ok(_) => Ok(Value::Null),
             Err(error) => Err(CollectionError::StorageError { error }),
         }
     }

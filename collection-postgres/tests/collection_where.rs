@@ -36,7 +36,7 @@ async fn collection_where() {
 
     cleanup_table(instance.get_pool(), &table_name).await;
 
-    let mut collections = Collections::new(instance).await;
+    let collections = Collections::new(instance).await;
 
     let mut rows = vec![];
 

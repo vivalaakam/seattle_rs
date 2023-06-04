@@ -5,3 +5,4 @@ pub mod get_request;
 pub mod update_request;
 pub mod handle_response;
 pub mod error_response;
+pub mod batch_request;
