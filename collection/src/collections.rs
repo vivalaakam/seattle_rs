@@ -158,8 +158,7 @@ impl<T> Collections<T>
         collection_name: String,
         collection_id: String,
     ) -> Result<Value, CollectionError> {
-        let collections = self.collections.lock().unwrap();
-        let collection = collections.get(&collection_name);
+        let collection = self.get_collection(&collection_name);
 
         if collection.is_none() {
             return Err(CollectionError::CollectionNotFound {
