@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use crate::CollectionError;
 
@@ -40,6 +40,7 @@ impl Collection {
             })
             .map(|(key, value)| CollectionField {
                 name: key.to_string(),
+                default: None,
                 field_type: match value {
                     Value::String(_) => FieldType::String,
                     Value::Number(_) => FieldType::Number,
@@ -93,12 +94,29 @@ impl Collection {
             }),
         }
     }
+
+    pub fn default_values(&self, data: Value) -> Value {
+        let mut map = Map::new();
+
+        for field in &self.fields {
+            let mut val = data.get(field.name.to_string()).unwrap_or(&Value::Null).clone();
+
+            if val.is_null() {
+                val = field.default.clone().unwrap_or(Value::Null);
+            }
+
+            map.insert(field.name.to_string(), val);
+        }
+
+        Value::Object(map)
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CollectionField {
     pub name: String,
     pub field_type: FieldType,
+    pub default: Option<Value>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]

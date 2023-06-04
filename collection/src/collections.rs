@@ -15,11 +15,11 @@ pub struct Collections<T> {
 }
 
 impl<T> Collections<T> where T: Storage {
-    fn get_collection(&self, key: &String) -> Option<Collection> {
+    pub fn get_collection(&self, key: &String) -> Option<Collection> {
         self.collections.lock().unwrap().get(key).cloned()
     }
 
-    fn set_collection(&self, key: &String, value: Collection) {
+    pub fn set_collection(&self, key: &String, value: Collection) {
         self.collections.lock().unwrap().insert(key.to_string(), value);
     }
 }
@@ -89,6 +89,8 @@ impl<T> Collections<T>
         let collection = collection.unwrap();
 
         collection.validate(&data)?;
+
+        let data = collection.default_values(data);
 
         match self
             .storage

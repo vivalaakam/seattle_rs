@@ -156,6 +156,7 @@ impl Storage for StorePostgresql {
         if !id_exists {
             fields.push(CollectionField {
                 name: ID_FIELD.to_string(),
+                default: None,
                 field_type: FieldType::String,
             });
         }
@@ -163,6 +164,7 @@ impl Storage for StorePostgresql {
         if !created_at_exists {
             fields.push(CollectionField {
                 name: CREATED_AT_FIELD.to_string(),
+                default: None,
                 field_type: FieldType::TimeStamp,
             });
         }
@@ -170,6 +172,7 @@ impl Storage for StorePostgresql {
         if !updated_at_exists {
             fields.push(CollectionField {
                 name: UPDATED_AT_FIELD.to_string(),
+                default: None,
                 field_type: FieldType::TimeStamp,
             });
         }
