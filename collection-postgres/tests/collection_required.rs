@@ -6,9 +6,9 @@ use serde_json::json;
 use tracing::{debug, info};
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, Storage};
 use collection::CollectionField;
 use collection::FieldType;
+use collection::{Collections, Storage};
 use collection_postgres::StorePostgresql;
 use helpers::cleanup_table::cleanup_table;
 

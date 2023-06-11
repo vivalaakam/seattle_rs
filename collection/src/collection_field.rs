@@ -1,6 +1,6 @@
+use crate::FieldType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::FieldType;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CollectionField {

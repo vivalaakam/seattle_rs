@@ -6,7 +6,7 @@ use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collections, Storage};
+use collection::{Collection, Collections, Storage};
 use collection_postgres::StorePostgresql;
 use store::{routes, App};
 
@@ -32,7 +32,12 @@ async fn store_batch() {
 
     let table_name = "Collection1".to_string();
 
-    let _ = instance.remove_collection(table_name.to_string()).await;
+    let _ = instance
+        .remove_collection(&Collection {
+            name: table_name.to_string(),
+            ..Default::default()
+        })
+        .await;
 
     let collections = Collections::new(instance).await;
 

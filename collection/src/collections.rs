@@ -82,7 +82,7 @@ where
             for field in coll.get_new_fields(&data) {
                 coll = self
                     .storage
-                    .insert_field_to_collection(collection_name.to_string(), field)
+                    .insert_field_to_collection(&coll, field)
                     .await
                     .unwrap();
             }
@@ -92,7 +92,9 @@ where
             collection = self.get_collection(&collection_name);
         }
 
-        let collection = collection.unwrap();
+        let collection = collection.ok_or(CollectionError::CollectionNotFound {
+            collection: collection_name,
+        })?;
 
         collection.validate(&data)?;
 
@@ -100,14 +102,10 @@ where
 
         collection.required_values(&data, false)?;
 
-        match self
-            .storage
-            .insert_data_into_collection(collection_name, data)
+        self.storage
+            .insert_data_into_collection(&collection, data)
             .await
-        {
-            Ok(data) => Ok(data),
-            Err(error) => Err(CollectionError::StorageError { error }),
-        }
+            .map_err(|error| CollectionError::StorageError { error })
     }
 
     pub async fn update(
@@ -122,15 +120,11 @@ where
             });
         }
 
-        let collection = self.get_collection(&collection_name);
-
-        if collection.is_none() {
-            return Err(CollectionError::CollectionNotFound {
-                collection: collection_name,
-            });
-        }
-
-        let mut collection = collection.unwrap();
+        let mut collection =
+            self.get_collection(&collection_name)
+                .ok_or(CollectionError::CollectionNotFound {
+                    collection: collection_name.to_string(),
+                })?;
 
         let fields = collection.get_new_fields(&data);
 
@@ -140,85 +134,73 @@ where
             for field in fields {
                 coll = self
                     .storage
-                    .insert_field_to_collection(collection_name.to_string(), field)
+                    .insert_field_to_collection(&coll, field)
                     .await
                     .unwrap();
             }
 
             self.set_collection(&collection_name, coll);
 
-            collection = self.get_collection(&collection_name).unwrap()
+            collection = self.get_collection(&collection_name).ok_or_else(|| {
+                CollectionError::CollectionNotFound {
+                    collection: collection_name.to_string(),
+                }
+            })?;
         }
 
         collection.validate(&data)?;
 
         collection.required_values(&data, true)?;
 
-        match self
-            .storage
-            .update_data_into_collection(collection_name, collection_id, data)
+        self.storage
+            .update_data_into_collection(&collection, collection_id, data)
             .await
-        {
-            Ok(data) => Ok(data),
-            Err(error) => Err(CollectionError::StorageError { error }),
-        }
+            .map_err(|error| CollectionError::StorageError { error })
     }
     pub async fn delete(
         &self,
         collection_name: String,
         collection_id: String,
     ) -> Result<Value, CollectionError> {
-        let collection = self.get_collection(&collection_name);
+        let collection =
+            self.get_collection(&collection_name)
+                .ok_or(CollectionError::CollectionNotFound {
+                    collection: collection_name,
+                })?;
 
-        if collection.is_none() {
-            return Err(CollectionError::CollectionNotFound {
-                collection: collection_name,
-            });
-        }
-
-        match self
-            .storage
-            .delete_data_from_collection(collection_name, collection_id)
+        self.storage
+            .delete_data_from_collection(&collection, collection_id)
             .await
-        {
-            Ok(_) => Ok(Value::Null),
-            Err(error) => Err(CollectionError::StorageError { error }),
-        }
+            .map_err(|error| CollectionError::StorageError { error })
     }
+
     pub async fn get(
         &self,
         collection_name: String,
         collection_id: String,
     ) -> Result<Value, CollectionError> {
-        let collection = self.get_collection(&collection_name);
+        let collection =
+            self.get_collection(&collection_name)
+                .ok_or(CollectionError::CollectionNotFound {
+                    collection: collection_name,
+                })?;
 
-        if collection.is_none() {
-            return Err(CollectionError::CollectionNotFound {
-                collection: collection_name,
-            });
-        }
-
-        match self
-            .storage
-            .get_data_from_collection(collection_name, collection_id)
+        self.storage
+            .get_data_from_collection(&collection, collection_id)
             .await
-        {
-            Ok(data) => Ok(data),
-            Err(error) => Err(CollectionError::StorageError { error }),
-        }
+            .map_err(|error| CollectionError::StorageError { error })
     }
+
     pub async fn list(
         &self,
         collection_name: String,
         query: Value,
     ) -> Result<Vec<Value>, CollectionError> {
-        let collection = self.get_collection(&collection_name);
-
-        if collection.is_none() {
-            return Err(CollectionError::CollectionNotFound {
-                collection: collection_name,
-            });
-        }
+        let collection =
+            self.get_collection(&collection_name)
+                .ok_or(CollectionError::CollectionNotFound {
+                    collection: collection_name,
+                })?;
 
         let fields = query
             .as_object()
@@ -244,13 +226,9 @@ where
 
         let collection_query = HashMap::from_iter(fields);
 
-        match self
-            .storage
-            .list_data_from_collection(collection_name, collection_query)
+        self.storage
+            .list_data_from_collection(&collection, collection_query)
             .await
-        {
-            Ok(data) => Ok(data),
-            Err(error) => Err(CollectionError::StorageError { error }),
-        }
+            .map_err(|error| CollectionError::StorageError { error })
     }
 }

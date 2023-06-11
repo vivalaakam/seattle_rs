@@ -18,42 +18,42 @@ pub trait Storage {
         collection_name: String,
         fields: Vec<CollectionField>,
     ) -> Result<Collection, StorageError>;
-    async fn remove_collection(&self, collection_name: String) -> Result<(), StorageError>;
+    async fn remove_collection(&self, collection: &Collection) -> Result<(), StorageError>;
     async fn insert_field_to_collection(
         &self,
-        collection_name: String,
+        collection: &Collection,
         field: CollectionField,
     ) -> Result<Collection, StorageError>;
     async fn remove_field_from_collection(
         &self,
-        collection_name: String,
+        collection: &Collection,
         field: CollectionField,
     ) -> Result<Collection, StorageError>;
 
     async fn insert_data_into_collection(
         &self,
-        collection: String,
+        collection: &Collection,
         data: Value,
     ) -> Result<Value, StorageError>;
     async fn update_data_into_collection(
         &self,
-        collection: String,
+        collection: &Collection,
         collection_id: String,
         data: Value,
     ) -> Result<Value, StorageError>;
     async fn delete_data_from_collection(
         &self,
-        collection: String,
+        collection: &Collection,
         collection_id: String,
-    ) -> Result<(), StorageError>;
+    ) -> Result<Value, StorageError>;
     async fn get_data_from_collection(
         &self,
-        collection: String,
+        collection: &Collection,
         collection_id: String,
     ) -> Result<Value, StorageError>;
     async fn list_data_from_collection(
         &self,
-        collection: String,
+        collection: &Collection,
         query: HashMap<String, Where>,
     ) -> Result<Vec<Value>, StorageError>;
 }

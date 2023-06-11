@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use serde_json::{Map, Value};
 
 use crate::collection_field::CollectionField;
-use crate::CollectionError;
 use crate::field_type::FieldType;
+use crate::CollectionError;
 
 const ID_FIELD: &str = "id";
 const CREATED_AT_FIELD: &str = "created_at";

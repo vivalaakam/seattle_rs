@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde_json::{json, Map, Value};
-use sqlx::{postgres::PgRow, Row, types::Json};
+use sqlx::{postgres::PgRow, types::Json, Row};
 
 use collection::Collection;
 use collection::FieldType;
