@@ -8,7 +8,9 @@ use sqlx::Arguments;
 use sqlx::{PgPool, Pool, Postgres, Row};
 use tracing::{debug, error, info};
 
-use collection::{make_id, Collection, CollectionField, FieldType, Storage, StorageError, Where};
+use collection::CollectionField;
+use collection::FieldType;
+use collection::{make_id, Collection, Storage, StorageError, Where};
 
 use crate::add_value_into_args::add_value_into_args;
 use crate::serialize_pg_row::serialize_pg_row;
@@ -436,7 +438,13 @@ impl Storage for StorePostgresql {
         let rec = sqlx::query_with(format!(r#"INSERT INTO "{collection_name}" ({insert_fields}) VALUES ({insert_indexes}) RETURNING id"#).as_str(), arguments)
             .fetch_one(&self.pool)
             .await
-            .expect("create error");
+            .map_err(|e| {
+                error!("insert_data_into_collection: {e}");
+                StorageError::DBErr {
+                    collection: collection_name.to_string(),
+                    err: e.to_string(),
+                }
+            })?;
 
         let collection_id = rec.get::<String, _>("id");
 
@@ -495,9 +503,15 @@ impl Storage for StorePostgresql {
             )
             .execute(&self.pool)
             .await
-            .expect("update error");
+            .map_err(|e| {
+                error!("update_data_into_collection: {e}");
+                StorageError::DBErr {
+                    collection: collection_name.to_string(),
+                    err: e.to_string(),
+                }
+            })?;
 
-            info!("update_into_collection: {collection_name} with id: {collection_id}");
+            debug!("update_into_collection: {collection_name} with id: {collection_id}");
         }
 
         self.get_data_from_collection(collection_name, collection_id)
@@ -506,16 +520,22 @@ impl Storage for StorePostgresql {
 
     async fn delete_data_from_collection(
         &self,
-        collection: String,
+        collection_name: String,
         collection_id: String,
     ) -> anyhow::Result<(), StorageError> {
-        let query = format!(r#"DELETE FROM "{collection}" WHERE id = $1"#);
+        let query = format!(r#"DELETE FROM "{collection_name}" WHERE id = $1"#);
 
         let _rec = sqlx::query(query.as_str())
             .bind(collection_id)
             .execute(&self.pool)
             .await
-            .expect("delete error");
+            .map_err(|e| {
+                error!("delete_data_from_collection: {e}");
+                StorageError::DBErr {
+                    collection: collection_name.to_string(),
+                    err: e.to_string(),
+                }
+            })?;
 
         Ok(())
     }

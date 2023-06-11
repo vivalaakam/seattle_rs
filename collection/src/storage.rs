@@ -4,7 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::collection::{Collection, CollectionField};
+use crate::collection::Collection;
+use crate::collection_field::CollectionField;
 use crate::storage_error::StorageError;
 use crate::where_attr::Where;
 

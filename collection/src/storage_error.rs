@@ -19,4 +19,6 @@ pub enum StorageError {
     CollectionFieldRemove { collection: String, field: String },
     #[error("Value not found {collection} : {id}")]
     ValueNotFound { collection: String, id: String },
+    #[error("Value not found {collection} : {err}")]
+    DBErr { collection: String, err: String },
 }

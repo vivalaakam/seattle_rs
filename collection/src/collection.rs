@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
+use crate::collection_field::CollectionField;
 use crate::CollectionError;
+use crate::field_type::FieldType;
 
 const ID_FIELD: &str = "id";
 const CREATED_AT_FIELD: &str = "created_at";
@@ -42,14 +43,7 @@ impl Collection {
                 name: key.to_string(),
                 default: None,
                 required: None,
-                field_type: match value {
-                    Value::String(_) => FieldType::String,
-                    Value::Number(_) => FieldType::Number,
-                    Value::Bool(_) => FieldType::Boolean,
-                    Value::Array(_) => FieldType::Array,
-                    Value::Object(_) => FieldType::Object,
-                    Value::Null => FieldType::Object,
-                },
+                field_type: value.clone().into(),
             })
             .collect::<Vec<_>>()
     }
@@ -71,17 +65,11 @@ impl Collection {
             .as_object()
             .unwrap()
             .iter()
-            .map(|(key, value)| match exists.get(key) {
-                None => None,
-                Some(field) => match field {
-                    FieldType::String | FieldType::TimeStamp => {
-                        (!(value.is_string() || value.is_null())).then_some(key)
-                    }
-                    FieldType::Number => (!(value.is_number() || value.is_null())).then_some(key),
-                    FieldType::Boolean => (!(value.is_boolean() || value.is_null())).then_some(key),
-                    FieldType::Array => (!(value.is_array() || value.is_null())).then_some(key),
-                    FieldType::Object => (!(value.is_object() || value.is_null())).then_some(key),
-                },
+            .map(|(key, value)| {
+                exists
+                    .get(key)
+                    .map(|field| (!field.is_maybe_exists(value)).then_some(key))
+                    .unwrap()
             })
             .filter(|key| key.is_some())
             .map(|key| key.unwrap().to_string())
@@ -130,30 +118,12 @@ impl Collection {
             let val = data.get(f.name.to_string()).unwrap_or(&Value::Null).clone();
 
             if val.is_null() {
-                (f.name.to_string(), f.default.clone().unwrap_or(Value::Null))
+                (f.name, f.default.unwrap_or(Value::Null))
             } else {
-                (f.name.to_string(), val)
+                (f.name, val)
             }
         });
 
         Value::Object(Map::from_iter(fields))
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct CollectionField {
-    pub name: String,
-    pub field_type: FieldType,
-    pub default: Option<Value>,
-    pub required: Option<bool>,
-}
-
-#[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]
-pub enum FieldType {
-    String,
-    Number,
-    Boolean,
-    Array,
-    Object,
-    TimeStamp,
 }

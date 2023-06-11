@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde_json::{json, Map, Value};
-use sqlx::{postgres::PgRow, types::Json, Row};
+use sqlx::{postgres::PgRow, Row, types::Json};
 
-use collection::{Collection, FieldType};
+use collection::Collection;
+use collection::FieldType;
 
 pub fn serialize_pg_row(collection: &Collection, row: PgRow) -> Value {
     let mut map = Map::new();
