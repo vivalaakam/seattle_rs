@@ -75,13 +75,13 @@ impl Collection {
             .map(|key| key.unwrap().to_string())
             .collect::<Vec<_>>();
 
-        match fields.is_empty() {
-            true => Ok(()),
-            false => Err(CollectionError::ValidateFields {
+        fields
+            .is_empty()
+            .then_some(())
+            .ok_or(CollectionError::ValidateFields {
                 collection: self.name.clone(),
                 fields,
-            }),
-        }
+            })
     }
 
     pub fn required_values(&self, data: &Value, only_exists: bool) -> Result<(), CollectionError> {
@@ -104,13 +104,13 @@ impl Collection {
             .map(|field| field.name.to_string())
             .collect::<Vec<_>>();
 
-        match fields.is_empty() {
-            true => Ok(()),
-            false => Err(CollectionError::ValidateFields {
+        fields
+            .is_empty()
+            .then_some(())
+            .ok_or(CollectionError::ValidateFields {
                 collection: self.name.clone(),
                 fields,
-            }),
-        }
+            })
     }
 
     pub fn default_values(&self, data: Value) -> Value {
