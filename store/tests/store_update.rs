@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collection, Collections, Storage};
-use collection_postgres::StorePostgresql;
 use store::{routes, App};
+use vivalaakam_seattle_collection::{Collection, Collections, Storage};
+use vivalaakam_seattle_collection_postgres::StorePostgresql;
 
 use crate::helpers::create_request::create_request;
 use crate::helpers::get_request::get_request;

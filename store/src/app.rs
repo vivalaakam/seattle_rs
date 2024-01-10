@@ -1,4 +1,4 @@
-use collection::{Collections, Storage};
+use vivalaakam_seattle_collection::{Collections, Storage};
 
 #[derive(Clone)]
 pub struct App<T> {

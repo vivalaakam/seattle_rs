@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde_json::Value;
 use sqlx::{types::Json, FromRow};
 
-use collection::Collection;
+use vivalaakam_seattle_collection::Collection;
 
 #[derive(FromRow)]
 pub struct StoreCollectionQuery {

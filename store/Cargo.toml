@@ -1,27 +1,26 @@
 [package]
-name = "store"
+name = "vivalaakam_seattle_store"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Andrey Makarov <viva.la.akam@gmail.com>"]
+description = "Base store app"
+license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 path = "src/lib.rs"
 
-[[bin]]
-path = "src/main.rs"
-name = "store"
-
 [dependencies]
-tokio = { workspace = true }
-serde = { workspace = true }
-sentry = { workspace = true }
-dotenv = { workspace = true }
-anyhow = { workspace = true }
-tracing = { workspace = true }
-actix-web = { workspace = true }
-actix-http = { workspace = true }
-collection = { workspace = true }
-serde_json = { workspace = true }
-actix-web-httpauth = { workspace = true }
-tracing-subscriber = { workspace = true }
-collection-postgres = { workspace = true }
+anyhow = "1.0"
+tracing = "0.1"
+actix-web = "4.4"
+actix-http = "3.5"
+serde_json = "1.0"
+actix-web-httpauth = "0.8"
+vivalaakam_seattle_collection = "0.1.0"
+vivalaakam_seattle_collection_postgres = "0.1.0"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+dotenv = "0.15"
+tracing-subscriber = "0.3"

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tracing::debug;
 
-use collection::{value_to_string, CollectionError, Storage};
+use vivalaakam_seattle_collection::{value_to_string, CollectionError, Storage};
 
 use crate::collection_action::CollectionAction;
 use crate::App;

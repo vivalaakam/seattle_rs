@@ -2,8 +2,7 @@ use chrono::{DateTime, Utc};
 use serde_json::{json, Map, Value};
 use sqlx::{postgres::PgRow, types::Json, Row};
 
-use collection::Collection;
-use collection::FieldType;
+use vivalaakam_seattle_collection::{Collection, FieldType};
 
 pub fn serialize_pg_row(collection: &Collection, row: PgRow) -> Value {
     let mut map = Map::new();

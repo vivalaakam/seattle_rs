@@ -2,7 +2,7 @@ use actix_web::{dev::ServiceRequest, error::ErrorForbidden, web, Error};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use tracing::debug;
 
-use collection::Storage;
+use vivalaakam_seattle_collection::Storage;
 
 use crate::App;
 

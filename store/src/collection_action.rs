@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use collection::{CollectionError, Storage};
+use vivalaakam_seattle_collection::{CollectionError, Storage};
 
 use crate::App;
 

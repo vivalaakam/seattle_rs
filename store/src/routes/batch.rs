@@ -3,7 +3,7 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use collection::{value_to_string, Storage};
+use vivalaakam_seattle_collection::{value_to_string, Storage};
 
 use crate::collection_action::CollectionAction;
 use crate::App;

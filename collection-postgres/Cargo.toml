@@ -1,21 +1,25 @@
 [package]
-name = "collection-postgres"
+name = "vivalaakam_seattle_collection_postgres"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Andrey Makarov <viva.la.akam@gmail.com>"]
+description = "Collection provider"
+license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sqlx = { workspace = true }
-serde = { workspace = true }
-tokio = { workspace = true }
-dotenv = { workspace = true }
-anyhow = { workspace = true }
-chrono = { workspace = true }
-tracing = { workspace = true }
-thiserror = { workspace = true }
-collection = { workspace = true }
-serde_json = { workspace = true }
-async-trait = { workspace = true }
-tracing-subscriber = { workspace = true }
-sql_query_builder = { version = "1.0", features = ["postgresql"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0"
+chrono = "0.4"
+tracing = "0.1"
+thiserror = "1.0"
+serde_json = "1.0"
+async-trait = "0.1"
+vivalaakam_seattle_collection = "0.1.0"
+sql_query_builder = { version = "2.1.0", features = ["postgresql"] }
+sqlx = { version = "0.7.3", features = ["postgres", "runtime-tokio-native-tls", "chrono", "json"] }
+
+[dev-dependencies]
+tracing-subscriber = "0.3"
+dotenv = "0.15"

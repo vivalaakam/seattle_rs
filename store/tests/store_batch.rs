@@ -6,9 +6,9 @@ use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
-use collection::{Collection, Collections, Storage};
-use collection_postgres::StorePostgresql;
 use store::{routes, App};
+use vivalaakam_seattle_collection::{Collection, Collections, Storage};
+use vivalaakam_seattle_collection_postgres::StorePostgresql;
 
 use crate::helpers::batch_request::{batch_request, CollectionAction};
 use crate::helpers::collection_response::CollectionResponse;

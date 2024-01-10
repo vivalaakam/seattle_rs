@@ -3,14 +3,12 @@ use std::iter;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use sqlx::postgres::PgArguments;
-use sqlx::Arguments;
-use sqlx::{PgPool, Pool, Postgres, Row};
+use sqlx::{postgres::PgArguments, Arguments, PgPool, Pool, Postgres, Row};
 use tracing::{debug, error, info};
 
-use collection::CollectionField;
-use collection::FieldType;
-use collection::{make_id, Collection, Storage, StorageError, Where};
+use vivalaakam_seattle_collection::{
+    make_id, Collection, CollectionField, FieldType, Storage, StorageError, Where,
+};
 
 use crate::add_value_into_args::add_value_into_args;
 use crate::serialize_pg_row::serialize_pg_row;
@@ -99,7 +97,7 @@ impl Storage for StorePostgresql {
     ) -> anyhow::Result<Collection, StorageError> {
         let mut transaction = self.pool.begin().await.expect("transaction failed");
 
-        let query = format!(
+        let q = format!(
             r#"
         CREATE TABLE IF NOT EXISTS "{collection_name}"
             (
@@ -110,7 +108,7 @@ impl Storage for StorePostgresql {
         "#
         );
 
-        let create_table = sqlx::query(query.as_str()).execute(&mut transaction).await;
+        let create_table = sqlx::query(q.as_str()).execute(&mut *transaction).await;
 
         if create_table.is_err() {
             error!("create_table: {:?}", create_table.unwrap_err());
@@ -142,7 +140,7 @@ impl Storage for StorePostgresql {
                 }
                 _ => {
                     let query = Self::query_field_to_collection(collection_name.to_string(), field);
-                    let create_field = sqlx::query(query.as_str()).execute(&mut transaction).await;
+                    let create_field = sqlx::query(query.as_str()).execute(&mut *transaction).await;
 
                     if create_field.is_err() {
                         transaction.rollback().await.unwrap();
@@ -189,7 +187,7 @@ impl Storage for StorePostgresql {
         let insert_collection = sqlx::query(r#"INSERT INTO storage_collection_schema ( name, fields, created_at, updated_at ) VALUES ( $1 , $2::jsonb, NOW(), NOW() )"#)
             .bind(collection_name.to_string())
             .bind(fields)
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await;
 
         if insert_collection.is_err() {
@@ -213,7 +211,7 @@ impl Storage for StorePostgresql {
             r#"DROP TABLE IF EXISTS "{collection_name}""#,
             collection_name = collection.name
         ))
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await;
 
         if drop_table.is_err() {
@@ -227,7 +225,7 @@ impl Storage for StorePostgresql {
         let remove_collection =
             sqlx::query(r#"DELETE FROM storage_collection_schema WHERE name LIKE $1"#)
                 .bind(collection.name.to_string())
-                .execute(&mut transaction)
+                .execute(&mut *transaction)
                 .await;
 
         if remove_collection.is_err() {
@@ -259,7 +257,7 @@ impl Storage for StorePostgresql {
         let mut transaction = self.pool.begin().await.expect("transaction failed");
 
         let query = Self::query_field_to_collection(collection.name.to_string(), &field);
-        let create_field = sqlx::query(query.as_str()).execute(&mut transaction).await;
+        let create_field = sqlx::query(query.as_str()).execute(&mut *transaction).await;
 
         if create_field.is_err() {
             transaction.rollback().await.unwrap();
@@ -278,7 +276,7 @@ impl Storage for StorePostgresql {
         )
             .bind(json!(fields).to_string())
             .bind(collection.name.to_string())
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await;
 
         if update_collection.is_err() {
@@ -314,7 +312,7 @@ impl Storage for StorePostgresql {
             collection_name = collection.name,
             column_name = field.name
         );
-        let remove_field = sqlx::query(query.as_str()).execute(&mut transaction).await;
+        let remove_field = sqlx::query(query.as_str()).execute(&mut *transaction).await;
 
         if remove_field.is_err() {
             transaction.rollback().await.unwrap();
@@ -339,7 +337,7 @@ impl Storage for StorePostgresql {
         )
             .bind(fields)
             .bind(collection.name.to_string())
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await;
 
         if update_collection.is_err() {

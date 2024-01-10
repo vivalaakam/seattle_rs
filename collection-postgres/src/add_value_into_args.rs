@@ -2,8 +2,7 @@ use serde_json::Value;
 use sqlx::postgres::PgArguments;
 use sqlx::Arguments;
 
-use collection::CollectionField;
-use collection::FieldType;
+use vivalaakam_seattle_collection::{CollectionField, FieldType};
 
 pub fn add_value_into_args(field: &CollectionField, value: &Value, args: &mut PgArguments) {
     match field.field_type {

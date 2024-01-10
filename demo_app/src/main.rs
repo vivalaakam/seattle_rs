@@ -2,13 +2,13 @@ use std::env;
 use std::str::FromStr;
 
 use actix_web::{web, App as WebApp, HttpServer};
-use collection::Collections;
-use collection_postgres::StorePostgresql;
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format;
+use vivalaakam_seattle_collection::Collections;
+use vivalaakam_seattle_collection_postgres::StorePostgresql;
 
-use store::{routes, App};
+use vivalaakam_seattle_store::{routes, App};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

@@ -1,7 +1,7 @@
 use actix_web::web;
 use actix_web_httpauth::middleware::HttpAuthentication;
 
-use collection::Storage;
+use vivalaakam_seattle_collection::Storage;
 
 use crate::validator::validator;
 
